@@ -19,10 +19,6 @@ export const uploadImage = async (
   userId?: string
 ): Promise<UploadResult> => {
   try {
-    // Get file info
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    
     // Create file path
     const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
     const timestamp = Date.now();
@@ -41,10 +37,18 @@ export const uploadImage = async (
       filePath = `${fileName}_${timestamp}.${fileExt}`;
     }
 
+    // Create FormData for React Native
+    const formData = new FormData();
+    formData.append('file', {
+      uri,
+      type: `image/${fileExt}`,
+      name: `${fileName}_${timestamp}.${fileExt}`,
+    } as any);
+
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, blob, {
+      .upload(filePath, formData, {
         contentType: `image/${fileExt}`,
         upsert: false
       });
