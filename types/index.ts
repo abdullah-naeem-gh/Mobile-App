@@ -49,3 +49,29 @@ export interface User {
   posts_count: number;
   created_at: string;
 }
+
+export interface Outfit {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  occasion?: string;
+  style_tags?: string[];
+  likes_count: number;
+  comments_count: number;
+  saves_count: number;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  outfit_articles?: {
+    id: string;
+    outfit_id: string;
+    article_id: string;
+    x_position: number;
+    y_position: number;
+  }[];
+  is_liked?: boolean;
+  is_saved?: boolean;
+}
