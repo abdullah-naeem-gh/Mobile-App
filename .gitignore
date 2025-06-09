@@ -38,3 +38,4 @@ yarn-error.*
 context.md
 todo.md
 package-lock.json
+.env
