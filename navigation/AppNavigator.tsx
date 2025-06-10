@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
@@ -20,6 +21,12 @@ const AuthStack = () => (
     <Stack.Screen name="Welcome" component={WelcomeScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="SignUp" component={SignUpScreen} />
+  </Stack.Navigator>
+);
+
+const OnboardingStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
   </Stack.Navigator>
 );
 
@@ -80,8 +87,35 @@ const LoadingScreen = () => (
   </View>
 );
 
+// Debug component to show auth state (remove in production)
+const DebugInfo = () => {
+  const { session, isNewUser } = useAuth();
+  
+  if (__DEV__) {
+    return (
+      <View style={{ 
+        position: 'absolute', 
+        top: 50, 
+        right: 10, 
+        backgroundColor: 'rgba(255,255,255,0.8)', 
+        padding: 5, 
+        borderRadius: 5,
+        zIndex: 1000 
+      }}>
+        <Text style={{ fontSize: 10, color: 'black' }}>
+          Session: {session ? '✓' : '✗'}
+        </Text>
+        <Text style={{ fontSize: 10, color: 'black' }}>
+          New User: {isNewUser ? '✓' : '✗'}
+        </Text>
+      </View>
+    );
+  }
+  return null;
+};
+
 export const AppNavigator = () => {
-  const { session, loading } = useAuth();
+  const { session, loading, isNewUser } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -89,7 +123,8 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {session ? <MainTabs /> : <AuthStack />}
+      <DebugInfo />
+      {session ? (isNewUser ? <OnboardingStack /> : <MainTabs />) : <AuthStack />}
     </NavigationContainer>
   );
 };
