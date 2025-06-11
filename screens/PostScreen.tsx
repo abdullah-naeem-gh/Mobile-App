@@ -29,7 +29,7 @@ type PostType = 'article' | 'outfit';
 
 export const PostScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [postType, setPostType] = useState<PostType>('article');
   
   // Common fields
@@ -74,7 +74,7 @@ export const PostScreen: React.FC = () => {
     }
     
     // Check if user is logged in and has an ID
-    if (!user || !user.id) {
+    if (!user?.id || !session) {
       Alert.alert('Error', 'You must be logged in to create a post');
       return;
     }
@@ -90,7 +90,7 @@ export const PostScreen: React.FC = () => {
         imageUri,
         bucketName,
         fileName,
-        user?.id
+        user.id
       );
       
       if (!uploadResult.success || !uploadResult.url) {
@@ -101,10 +101,10 @@ export const PostScreen: React.FC = () => {
       if (postType === 'article') {
         // Handle article creation
         const articleData = {
-          brand_id: user.id, // Now we're sure user.id exists
+          brand_id: user.id,
           title,
           description,
-          price: price ? parseFloat(price) : 0, // Use 0 instead of undefined
+          price: price ? parseFloat(price) : 0,
           currency,
           image_urls: [uploadResult.url],
           category,

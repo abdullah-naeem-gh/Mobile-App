@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   session: Session | null;
+  user: User | null;
+  userRole: 'consumer' | 'brand' | null;
   loading: boolean;
   isNewUser: boolean;
   signUp: (email: string, password: string, role: 'consumer' | 'brand') => Promise<{ error?: any }>;
@@ -19,12 +21,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [session, setSession] = useState<Session | null>(null);
+  const [userRole, setUserRole] = useState<'consumer' | 'brand' | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        fetchUserRole(session.user.id);
+      }
       checkIfNewUser(session);
       setLoading(false);
     });
@@ -35,8 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSession(session);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        await fetchUserRole(session.user.id);
         await checkIfNewUser(session);
       } else if (event === 'SIGNED_OUT') {
+        setUserRole(null);
         setIsNewUser(false);
       }
       
@@ -45,6 +53,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        setUserRole(null);
+        return;
+      }
+
+      if (profile) {
+        setUserRole(profile.role as 'consumer' | 'brand');
+      } else {
+        setUserRole(null);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserRole:', error);
+      setUserRole(null);
+    }
+  };
 
   const checkIfNewUser = async (session: Session | null) => {
     if (!session?.user) {
@@ -182,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (error) {
         throw error;
       }
+      setUserRole(null);
       setIsNewUser(false);
     } catch (error) {
       console.error('SignOut error:', error);
@@ -203,6 +237,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const value = {
     session,
+    user: session?.user || null,
+    userRole,
     loading,
     isNewUser,
     signUp,
