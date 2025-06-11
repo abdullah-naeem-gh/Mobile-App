@@ -1,110 +1,129 @@
 import { supabase } from '../lib/supabase';
 import { Outfit } from '../types';
 
-export interface TaggedArticle {
+export interface CreateOutfitData {
+  user_id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  occasion?: string;
+  style_tags?: string[];
+  is_public?: boolean;
+}
+
+export interface OutfitTag {
   article_id: string;
   x_position: number;
   y_position: number;
 }
 
-export interface OutfitCreateData {
-  title: string;
-  description: string;
-  image_url: string;
-  occasion: string;
-  style_tags: string[];
-  tagged_articles: TaggedArticle[];
-}
-
-export const outfitService = {
-  /**
-   * Create a new outfit post with tagged articles
-   */
+class OutfitService {
   async createOutfit(
-    data: OutfitCreateData
-  ): Promise<{ success: boolean; data?: Outfit; error?: string }> {
+    outfitData: CreateOutfitData,
+    tags: OutfitTag[] = []
+  ): Promise<{ success: boolean; data?: Outfit; error?: string; outfitId?: string }> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // First insert the outfit
+      console.log(`Creating outfit with ${tags.length} tags`);
+      
+      // Create the outfit first
       const { data: outfit, error: outfitError } = await supabase
         .from('outfits')
-        .insert({
-          user_id: user.id,
-          title: data.title,
-          description: data.description,
-          image_url: data.image_url,
-          occasion: data.occasion,
-          style_tags: data.style_tags,
-          is_public: true
-        })
-        .select('*')
+        .insert([outfitData])
+        .select()
         .single();
 
-      if (outfitError) throw outfitError;
-
-      // Then insert the tagged articles if any
-      if (data.tagged_articles && data.tagged_articles.length > 0) {
-        const taggedArticles = data.tagged_articles.map(tag => ({
-          outfit_id: outfit.id,
-          article_id: tag.article_id,
-          x_position: tag.x_position,
-          y_position: tag.y_position
-        }));
-
-        const { error: tagError } = await supabase
-          .from('outfit_articles')
-          .insert(taggedArticles);
-
-        if (tagError) throw tagError;
+      if (outfitError) {
+        console.error('Outfit creation error:', outfitError);
+        return { success: false, error: outfitError.message };
       }
 
-      return { success: true, data: outfit as unknown as Outfit };
+      // If there are tags, create outfit_articles entries
+      if (tags.length > 0 && outfit) {
+        const outfitArticles = tags.map(tag => ({
+          outfit_id: outfit.id,
+          article_id: tag.article_id,
+          x_position: parseFloat(tag.x_position.toFixed(2)), // Ensure we store clean values
+          y_position: parseFloat(tag.y_position.toFixed(2)),
+        }));
+
+        console.log('Inserting outfit articles:', outfitArticles);
+
+        const { error: tagsError } = await supabase
+          .from('outfit_articles')
+          .insert(outfitArticles);
+
+        if (tagsError) {
+          console.error('Tags creation error:', tagsError);
+          // Note: Outfit was created but tags failed
+          return {
+            success: false,
+            error: 'Outfit created but tags failed to save',
+            outfitId: outfit.id
+          };
+        }
+      }
+
+      return { success: true, data: outfit };
     } catch (error) {
-      console.error('Error creating outfit:', error);
+      console.error('Create outfit error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create outfit'
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  },
+  }
 
-  /**
-   * Get all outfits with pagination and filters
-   */
-  async getOutfits(
-    page: number = 0,
-    limit: number = 10,
-    userId?: string
-  ): Promise<{ data: Outfit[]; error?: string }> {
+  async getOutfits(filters: {
+    userId?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<{ success: boolean; data?: Outfit[]; error?: string }> {
     try {
       let query = supabase
         .from('outfits')
         .select(`
           *,
-          user:users(*),
-          outfit_articles(*)
+          users:user_id(username, profile_pic_url),
+          outfit_articles(
+            x_position,
+            y_position,
+            articles(id, title, price, currency, image_urls)
+          )
         `)
         .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .range(page * limit, (page + 1) * limit - 1);
+        .order('created_at', { ascending: false });
 
-      if (userId) {
-        query = query.eq('user_id', userId);
+      if (filters.userId) {
+        query = query.eq('user_id', filters.userId);
+      }
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      if (filters.offset) {
+        query = query.range(
+          filters.offset,
+          filters.offset + (filters.limit || 10) - 1
+        );
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Get outfits error:', error);
+        return { success: false, error: error.message };
+      }
 
-      return { data: data as unknown as Outfit[] };
+      return { success: true, data: data || [] };
     } catch (error) {
-      console.error('Error fetching outfits:', error);
+      console.error('Get outfits error:', error);
       return {
-        data: [],
-        error: error instanceof Error ? error.message : 'Failed to fetch outfits'
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
-};
+}
+
+export const outfitService = new OutfitService();

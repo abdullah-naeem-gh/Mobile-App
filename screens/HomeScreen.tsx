@@ -53,12 +53,13 @@ export const HomeScreen: React.FC = () => {
     if (error) {
       Alert.alert('Error', error);
     } else {
+      const articles = data || []; // Handle undefined data
       if (reset || currentPage === 0) {
-        setArticles(data);
+        setArticles(articles);
       } else {
-        setArticles(prev => [...prev, ...data]);
+        setArticles(prev => [...prev, ...articles]);
       }
-      setHasMore(data.length === 20); // Assuming limit is 20
+      setHasMore(articles.length === 20); // Assuming limit is 20
     }
     
     setLoading(false);

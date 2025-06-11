@@ -20,6 +20,10 @@ import { ArticleFilters, articleService } from '../services/articleService';
 import { CategoryType, GenderType } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { OutfitTagger, OutfitTag } from '../components/OutfitTagger';
+import { ArticleSearchModal } from '../components/ArticleSearchModal';
+import { outfitService } from '../services/outfitService';
+import { Article } from '../types';
 
 const categories: CategoryType[] = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
 const genders: GenderType[] = ['male', 'female', 'unisex'];
@@ -53,6 +57,11 @@ export const PostScreen: React.FC = () => {
   const [styleTags, setStyleTags] = useState('');
   const [taggedArticles, setTaggedArticles] = useState<{id: string; x: number; y: number}[]>([]);
   
+  // Outfit tagging specific state
+  const [outfitTags, setOutfitTags] = useState<OutfitTag[]>([]);
+  const [selectedTag, setSelectedTag] = useState<OutfitTag | null>(null);
+  const [showArticleSearch, setShowArticleSearch] = useState(false);
+  
   // Handle image selection
   const handleImagePick = async () => {
     const result = await pickImage();
@@ -64,6 +73,65 @@ export const PostScreen: React.FC = () => {
   // Switch between article and outfit
   const togglePostType = (type: PostType) => {
     setPostType(type);
+  };
+  
+  // Handle adding a new tag on image press
+  const handleImagePress = (x: number, y: number) => {
+    if (postType !== 'outfit') return;
+    
+    console.log(`Adding tag at position: x=${x}%, y=${y}%`);
+    
+    const newTag: OutfitTag = {
+      id: `tag_${Date.now()}`,
+      x,
+      y,
+    };
+    
+    setOutfitTags(prev => [...prev, newTag]);
+    setSelectedTag(newTag);
+    setShowArticleSearch(true);
+  };
+  
+  // Handle tag press (edit existing tag)
+  const handleTagPress = (tag: OutfitTag) => {
+    setSelectedTag(tag);
+    setShowArticleSearch(true);
+  };
+  
+  // Handle article search modal close
+  const handleSearchModalClose = () => {
+    // Don't remove untagged items when modal closes - let user decide
+    setSelectedTag(null);
+    setShowArticleSearch(false);
+  };
+
+  // Handle article selection from search modal
+  const handleArticleSelect = (article: Article) => {
+    if (!selectedTag) return;
+    
+    console.log(`Tagging with article: ${article.title} (${article.id})`);
+    
+    setOutfitTags(prev =>
+      prev.map(tag =>
+        tag.id === selectedTag.id
+          ? {
+              ...tag,
+              articleId: article.id,
+              articleTitle: article.title,
+            }
+          : tag
+      )
+    );
+    
+    // Simply hide the search modal but keep the selected tag
+    // to ensure UI feedback is maintained
+    setShowArticleSearch(false);
+    setTimeout(() => setSelectedTag(null), 300);
+  };
+  
+  // Handle tag deletion
+  const handleTagDelete = (tagId: string) => {
+    setOutfitTags(prev => prev.filter(tag => tag.id !== tagId));
   };
   
   // Submit post
@@ -124,8 +192,31 @@ export const PostScreen: React.FC = () => {
         
         Alert.alert('Success', 'Article posted successfully!');
       } else {
-        // TODO: Handle outfit creation with hotspot tagging
-        // This would use a different service call
+        // Handle outfit creation with tags
+        const outfitData = {
+          user_id: user.id,
+          title,
+          description,
+          image_url: uploadResult.url,
+          occasion,
+          style_tags: styleTags.split(',').map(t => t.trim()).filter(t => t.length > 0),
+          is_public: true,
+        };
+        
+        // Convert tags to the format expected by the service
+        const tagData = outfitTags
+          .filter(tag => tag.articleId)
+          .map(tag => ({
+            article_id: tag.articleId!,
+            x_position: tag.x,
+            y_position: tag.y,
+          }));
+        
+        const { success, error } = await outfitService.createOutfit(outfitData, tagData);
+        
+        if (!success) {
+          throw new Error(error || 'Failed to create outfit');
+        }
         
         Alert.alert('Success', 'Outfit posted successfully!');
       }
@@ -140,6 +231,7 @@ export const PostScreen: React.FC = () => {
       setTags('');
       setPurchaseUrl('');
       setStyleTags('');
+      setOutfitTags([]);
       
     } catch (error) {
       console.error('Post error:', error);
@@ -197,23 +289,33 @@ export const PostScreen: React.FC = () => {
         
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Image Upload Section */}
-          <View style={styles.imageSection}>
-            <TouchableOpacity 
-              style={styles.imageUpload} 
-              onPress={handleImagePick}
-              disabled={uploading}
-            >
-              {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
-              ) : (
-                <View style={styles.placeholder}>
-                  <Ionicons name="camera-outline" size={40} color="#666" />
-                  <Text style={styles.placeholderText}>
-                    Tap to select image
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
+          <View style={[styles.imageSection, postType === 'outfit' && imageUri && styles.outfitImageSection]}>
+            {postType === 'outfit' && imageUri ? (
+              <OutfitTagger
+                imageUri={imageUri}
+                tags={outfitTags}
+                onTagPress={handleTagPress}
+                onImagePress={handleImagePress}
+                onTagDelete={handleTagDelete}
+              />
+            ) : (
+              <TouchableOpacity 
+                style={styles.imageUpload} 
+                onPress={handleImagePick}
+                disabled={uploading}
+              >
+                {imageUri ? (
+                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                ) : (
+                  <View style={styles.placeholder}>
+                    <Ionicons name="camera-outline" size={40} color="#666" />
+                    <Text style={styles.placeholderText}>
+                      Tap to select image
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
           
           {/* Common Fields */}
@@ -396,10 +498,43 @@ export const PostScreen: React.FC = () => {
               
               {imageUri && (
                 <View style={styles.outfitTaggingSection}>
-                  <Text style={styles.label}>Tap on image to tag articles</Text>
+                  <Text style={styles.label}>Tagged Articles ({outfitTags.filter(tag => tag.articleId).length})</Text>
                   <Text style={styles.helpText}>
-                    (Feature coming soon - you'll be able to tag specific articles in your outfit)
+                    Tap on the image to tag clothing items. Tap tags to edit or remove them.
                   </Text>
+                  {outfitTags.length > 0 && (
+                    <View style={styles.tagsList}>
+                      {outfitTags.map((tag) => (
+                        <TouchableOpacity
+                          key={tag.id}
+                          style={[
+                            styles.tagItem,
+                            !tag.articleId && styles.untaggedItem,
+                          ]}
+                          onPress={() => handleTagPress(tag)}
+                        >
+                          <View style={styles.tagItemContent}>
+                            <View style={styles.tagItemInfo}>
+                              <Text style={styles.tagText}>
+                                {tag.articleTitle || 'Untagged item'}
+                              </Text>
+                              {!tag.articleId && (
+                                <Text style={styles.tagStatus}>
+                                  Tap to select article
+                                </Text>
+                              )}
+                            </View>
+                            <TouchableOpacity
+                              style={styles.removeTagButton}
+                              onPress={() => handleTagDelete(tag.id)}
+                            >
+                              <Ionicons name="trash-outline" size={16} color="#ff4444" />
+                            </TouchableOpacity>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
               )}
             </>
@@ -423,6 +558,14 @@ export const PostScreen: React.FC = () => {
           <View style={styles.bottomSpace} />
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      {/* Article Search Modal */}
+      <ArticleSearchModal
+        visible={showArticleSearch}
+        onClose={handleSearchModalClose}
+        onSelectArticle={handleArticleSelect}
+        selectedArticle={selectedTag?.articleId ? { id: selectedTag.articleId, title: selectedTag.articleTitle || '' } as Article : null}
+      />
     </SafeAreaView>
   );
 };
@@ -556,5 +699,49 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 80,
+  },
+  tagsList: {
+    marginTop: 12,
+  },
+  tagItem: {
+    backgroundColor: '#111',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  untaggedItem: {
+    borderColor: '#ff6b35',
+    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+  },
+  tagItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tagItemInfo: {
+    flex: 1,
+  },
+  tagText: {
+    color: '#fff',
+    fontWeight: '500',
+  },
+  tagStatus: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  removeTagButton: {
+    padding: 8,
+    marginLeft: 12,
+  },
+  outfitImageSection: {
+    height: undefined, // Remove any fixed height
+    aspectRatio: 1, // Maintain aspect ratio
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    overflow: 'visible', // Allow tags to appear outside the container
   },
 });

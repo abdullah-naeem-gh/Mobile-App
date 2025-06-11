@@ -6,6 +6,7 @@ export interface ArticleFilters {
   category?: CategoryType;
   brandId?: string;
   search?: string;
+  limit?: number;
 }
 
 export const articleService = {
@@ -15,9 +16,11 @@ export const articleService = {
   async getArticles(
     filters: ArticleFilters = {},
     page: number = 0,
-    limit: number = 20
-  ): Promise<{ data: Article[]; error?: string }> {
+    limit?: number
+  ): Promise<{ success: boolean; data?: Article[]; error?: string }> {
     try {
+      const effectiveLimit = limit || filters.limit || 20;
+      
       let query = supabase
         .from('articles')
         .select(`
@@ -28,7 +31,7 @@ export const articleService = {
         `)
         .eq('is_available', true)
         .order('created_at', { ascending: false })
-        .range(page * limit, (page + 1) * limit - 1);
+        .range(page * effectiveLimit, (page + 1) * effectiveLimit - 1);
 
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
@@ -57,11 +60,11 @@ export const articleService = {
         is_saved: userId ? article.saves.some((save: any) => save.user_id === userId) : false,
       }));
 
-      return { data: articles };
+      return { success: true, data: articles };
     } catch (error) {
       console.error('Error fetching articles:', error);
       return { 
-        data: [], 
+        success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch articles' 
       };
     }
