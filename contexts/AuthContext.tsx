@@ -80,6 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signUp = async (email: string, password: string, role: 'consumer' | 'brand') => {
     try {
+      console.log('Starting signup with role:', role);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -91,10 +93,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       
       if (error) {
+        console.error('Supabase auth.signUp error:', error);
         return { error };
       }
       
+      console.log('Auth signup successful, user created:', data.user?.id);
+      
       if (data.user && data.session) {
+        // Wait for the profile to be created by the trigger
+        // Poll the profiles table to ensure the profile was created with correct role
+        let profileCreated = false;
+        let attempts = 0;
+        const maxAttempts = 10; // Maximum 5 seconds (500ms * 10)
+        
+        console.log('Waiting for profile creation...');
+        
+        while (!profileCreated && attempts < maxAttempts) {
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role, user_id')
+              .eq('user_id', data.user.id)
+              .single();
+            
+            if (profile && profile.role === role) {
+              profileCreated = true;
+              console.log('Profile created successfully with role:', profile.role);
+            } else if (profileError) {
+              if (profileError.code === 'PGRST116') {
+                // Not found error, expected while waiting
+                console.log(`Profile not found yet, attempt ${attempts + 1}/${maxAttempts}`);
+              } else {
+                console.error('Profile creation error:', profileError);
+                return { error: new Error(`Failed to create user profile: ${profileError.message}`) };
+              }
+            }
+          } catch (err) {
+            console.error('Error checking profile creation:', err);
+            return { error: new Error(`Profile verification failed: ${err}`) };
+          }
+          
+          if (!profileCreated) {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+          }
+        }
+        
+        if (!profileCreated) {
+          console.error('Profile creation timed out');
+          // If profile creation failed, clean up by signing out
+          await supabase.auth.signOut();
+          return { error: new Error('Profile creation timed out. Please try again.') };
+        }
+        
         // User is automatically logged in after signup (no email verification)
         // Mark them as a new user so they go to onboarding
         setIsNewUser(true);
