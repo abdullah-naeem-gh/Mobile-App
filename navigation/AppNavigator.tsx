@@ -12,6 +12,7 @@ import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { Text, View } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -46,8 +47,8 @@ const MainTabs = () => (
       name="Articles" 
       component={HomeScreen}
       options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>🏷️</Text>
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="pricetag-outline" size={size} color={color} />
         ),
       }}
     />
@@ -55,8 +56,8 @@ const MainTabs = () => (
       name="Outfits" 
       component={OutfitFeedScreen}
       options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>👗</Text>
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="shirt-outline" size={size} color={color} />
         ),
       }}
     />
@@ -64,8 +65,8 @@ const MainTabs = () => (
       name="Post" 
       component={PostScreen}
       options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>➕</Text>
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="add-circle-outline" size={size} color={color} />
         ),
       }}
     />
@@ -73,8 +74,8 @@ const MainTabs = () => (
       name="Profile" 
       component={ProfileScreen}
       options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 18 }}>👤</Text>
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="person-outline" size={size} color={color} />
         ),
       }}
     />
