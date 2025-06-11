@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  Animated,
+  Linking,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
@@ -28,6 +30,8 @@ export const HomeScreen: React.FC = () => {
   const [selectedGender, setSelectedGender] = useState<GenderType | 'all'>('all');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [headerVisible, setHeaderVisible] = useState(true);
 
   const loadArticles = useCallback(async (
     currentPage: number = 0, 
@@ -109,37 +113,50 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleArticlePress = (article: Article) => {
-    // Navigate to article details (to be implemented)
-    // Define proper button type from React Native's Alert API
-    type AlertButton = {
-      text: string;
-      onPress?: () => void;
-      style?: 'default' | 'cancel' | 'destructive';
-    };
-    
-    const buttons: AlertButton[] = [
-      { text: 'Close', style: 'cancel' },
-    ];
-    
     if (article.purchase_url) {
-      buttons.push({ 
-        text: 'Buy Now', 
-        onPress: () => {
-          // Handle purchase action here
-          console.log('Buy now pressed for:', article.title);
-        }
-      });
+      Alert.alert(
+        'View Article',
+        `Open ${article.title} on ${article.brand?.name || 'brand'} website?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Open', 
+            onPress: () => {
+              Linking.openURL(article.purchase_url!).catch(() => {
+                Alert.alert('Error', 'Could not open the website');
+              });
+            }
+          }
+        ]
+      );
+    } else {
+      Alert.alert(
+        article.title,
+        `Brand: ${article.brand?.name}\nPrice: ${article.currency} ${article.price}\n\n${article.description}`,
+        [{ text: 'Close', style: 'cancel' }]
+      );
     }
-    
-    Alert.alert(
-      article.title,
-      `Brand: ${article.brand?.name}\nPrice: ${article.currency} ${article.price}\n\n${article.description}`,
-      buttons
-    );
   };
 
-  const renderArticle = ({ item, index }: { item: Article; index: number }) => (
-    <View style={[styles.articleContainer, { marginLeft: index % 2 === 0 ? 0 : 10 }]}>
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentOffset = event.nativeEvent.contentOffset.y;
+        setHeaderVisible(currentOffset < 50);
+      }
+    }
+  );
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const renderArticle = ({ item }: { item: Article }) => (
+    <View style={styles.articleContainer}>
       <ArticleCard
         article={item}
         onPress={handleArticlePress}
@@ -151,12 +168,17 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Articles</Text>
-        <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+        <Text style={styles.title}>Kaprayy</Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={styles.iconButton}>
+            <Text style={styles.heartIcon}>♡</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       {/* Gender Filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
@@ -224,7 +246,6 @@ export const HomeScreen: React.FC = () => {
         data={articles}
         renderItem={renderArticle}
         keyExtractor={(item) => item.id}
-        numColumns={2}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -232,6 +253,8 @@ export const HomeScreen: React.FC = () => {
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No articles found</Text>
@@ -255,10 +278,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#333333',
   },
   title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    padding: 8,
+    marginRight: 10,
+  },
+  heartIcon: {
     fontSize: 24,
-    fontWeight: '600',
     color: '#ffffff',
   },
   signOutButton: {
@@ -294,11 +332,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingBottom: 20,
   },
   articleContainer: {
-    flex: 1,
+    marginBottom: 20,
+    backgroundColor: '#000000',
   },
   emptyContainer: {
     flex: 1,
