@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,56 +11,74 @@ import {
   Alert,
 } from 'react-native';
 import { OutfitCard } from '../components/OutfitCard';
-
-// Mock data for now - replace with actual data later
-const mockOutfits = [
-  {
-    id: '1',
-    image_urls: ['https://example.com/outfit1.jpg'],
-    description: 'Perfect outfit for a casual day out! Love this combination 💕',
-    user: {
-      id: 'user1',
-      username: 'fashionista_sarah',
-      profile_image_url: 'https://example.com/user1.jpg',
-    },
-    likes_count: 124,
-    saves_count: 32,
-    is_liked: false,
-    is_saved: false,
-    created_at: '2023-12-01T10:00:00Z',
-  },
-  {
-    id: '2',
-    image_urls: ['https://example.com/outfit2.jpg'],
-    description: 'Street style vibes ✨',
-    user: {
-      id: 'user2',
-      username: 'style_maven',
-    },
-    likes_count: 89,
-    saves_count: 21,
-    is_liked: true,
-    is_saved: false,
-    created_at: '2023-12-01T08:30:00Z',
-  },
-];
+import { outfitService } from '../services/outfitService';
+import { useAuth } from '../contexts/AuthContext';
 
 export const OutfitFeedScreen: React.FC = () => {
-  const [outfits, setOutfits] = useState(mockOutfits);
+  const { user } = useAuth();
+  const [outfits, setOutfits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const handleRefresh = () => {
+  const loadOutfits = useCallback(async (
+    currentPage: number = 0,
+    reset: boolean = false
+  ) => {
+    if (loading && !reset) return;
+    
+    setLoading(true);
+    
+    const { data, error } = await outfitService.getOutfits({
+      limit: 20,
+      offset: currentPage * 20,
+      currentUserId: user?.id,
+    });
+    
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      const outfits = data || [];
+      if (reset || currentPage === 0) {
+        setOutfits(outfits);
+      } else {
+        setOutfits(prev => [...prev, ...outfits]);
+      }
+      setHasMore(outfits.length === 20);
+    }
+    
+    setLoading(false);
+  }, [loading]);
+
+  useEffect(() => {
+    loadOutfits(0, true);
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: Implement actual refresh logic
-    setTimeout(() => setRefreshing(false), 1000);
-  };
+    await loadOutfits(0, true);
+    setPage(0);
+    setRefreshing(false);
+  }, [loadOutfits]);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadOutfits(nextPage, false);
+    }
+  }, [hasMore, loading, page, loadOutfits]);
 
   const handleOutfitPress = (outfit: any) => {
     Alert.alert('Outfit Details', `Viewing outfit by ${outfit.user.username}`);
   };
 
-  const handleLikeChange = (outfitId: string, isLiked: boolean) => {
+  const handleLikeChange = async (outfitId: string, isLiked: boolean) => {
+    if (!user) return;
+
+    // Optimistically update UI
     setOutfits(prev =>
       prev.map(outfit =>
         outfit.id === outfitId
@@ -72,9 +90,33 @@ export const OutfitFeedScreen: React.FC = () => {
           : outfit
       )
     );
+
+    // Make API call
+    const result = isLiked 
+      ? await outfitService.likeOutfit(outfitId, user.id)
+      : await outfitService.unlikeOutfit(outfitId, user.id);
+
+    if (!result.success) {
+      // Revert optimistic update on failure
+      setOutfits(prev =>
+        prev.map(outfit =>
+          outfit.id === outfitId
+            ? {
+                ...outfit,
+                is_liked: !isLiked,
+                likes_count: outfit.likes_count + (isLiked ? -1 : 1),
+              }
+            : outfit
+        )
+      );
+      Alert.alert('Error', result.error || 'Failed to update like');
+    }
   };
 
-  const handleSaveChange = (outfitId: string, isSaved: boolean) => {
+  const handleSaveChange = async (outfitId: string, isSaved: boolean) => {
+    if (!user) return;
+
+    // Optimistically update UI
     setOutfits(prev =>
       prev.map(outfit =>
         outfit.id === outfitId
@@ -86,14 +128,43 @@ export const OutfitFeedScreen: React.FC = () => {
           : outfit
       )
     );
+
+    // Make API call
+    const result = isSaved 
+      ? await outfitService.saveOutfit(outfitId, user.id)
+      : await outfitService.unsaveOutfit(outfitId, user.id);
+
+    if (!result.success) {
+      // Revert optimistic update on failure
+      setOutfits(prev =>
+        prev.map(outfit =>
+          outfit.id === outfitId
+            ? {
+                ...outfit,
+                is_saved: !isSaved,
+                saves_count: outfit.saves_count + (isSaved ? -1 : 1),
+              }
+            : outfit
+        )
+      );
+      Alert.alert('Error', result.error || 'Failed to update save');
+    }
   };
 
   const handleShowArticles = (outfit: any) => {
-    Alert.alert(
-      'Show Articles',
-      `This will show tagged articles for ${outfit.user.username}'s outfit`,
-      [{ text: 'OK' }]
-    );
+    if (outfit.outfit_articles && outfit.outfit_articles.length > 0) {
+      Alert.alert(
+        'Tagged Articles',
+        `This outfit has ${outfit.outfit_articles.length} tagged article(s). Navigation to article details coming soon!`,
+        [{ text: 'OK' }]
+      );
+    } else {
+      Alert.alert(
+        'No Articles Tagged',
+        'This outfit doesn\'t have any tagged articles yet.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleScroll = Animated.event(
@@ -137,6 +208,8 @@ export const OutfitFeedScreen: React.FC = () => {
         }
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No outfits found</Text>

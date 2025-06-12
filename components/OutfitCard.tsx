@@ -125,12 +125,6 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               {outfit.is_liked ? '♥' : '♡'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>💬</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>↗</Text>
-          </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
           <Text style={[styles.actionIcon, outfit.is_saved && styles.savedIcon]}>
