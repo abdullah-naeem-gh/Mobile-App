@@ -194,7 +194,6 @@ export const PostScreen: React.FC = () => {
       } else {
         // Handle outfit creation with tags
         const outfitData = {
-          user_id: user.id,
           title,
           description,
           image_url: uploadResult.url,
@@ -212,7 +211,7 @@ export const PostScreen: React.FC = () => {
             y_position: tag.y,
           }));
         
-        const { success, error } = await outfitService.createOutfit(outfitData, tagData);
+        const { success, error } = await outfitService.createOutfit(user.id, outfitData, tagData);
         
         if (!success) {
           throw new Error(error || 'Failed to create outfit');
