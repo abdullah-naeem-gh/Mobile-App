@@ -14,11 +14,9 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
+import { FiltersModal } from '../components/FiltersModal';
 import { Article, CategoryType, GenderType } from '../types';
 import { articleService, ArticleFilters } from '../services/articleService';
-
-const categories: CategoryType[] = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
-const genders: (GenderType | 'all')[] = ['all', 'male', 'female', 'unisex'];
 
 export const HomeScreen: React.FC = () => {
   const { signOut } = useAuth();
@@ -26,8 +24,7 @@ export const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState<ArticleFilters>({});
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'all'>('all');
-  const [selectedGender, setSelectedGender] = useState<GenderType | 'all'>('all');
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -44,13 +41,7 @@ export const HomeScreen: React.FC = () => {
     
     setLoading(true);
     
-    const activeFilters = {
-      ...currentFilters,
-      gender: selectedGender !== 'all' ? selectedGender : undefined,
-      category: selectedCategory !== 'all' ? selectedCategory : undefined,
-    };
-
-    const { data, error } = await articleService.getArticles(activeFilters, currentPage);
+    const { data, error } = await articleService.getArticles(currentFilters, currentPage);
     
     if (error) {
       Alert.alert('Error', error);
@@ -65,12 +56,12 @@ export const HomeScreen: React.FC = () => {
     }
     
     setLoading(false);
-  }, [filters, selectedCategory, selectedGender, loading]);
+  }, [filters, loading]);
 
   useEffect(() => {
     loadArticles(0, filters, true);
     setPage(0);
-  }, [selectedCategory, selectedGender]);
+  }, [filters]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -86,6 +77,16 @@ export const HomeScreen: React.FC = () => {
       loadArticles(nextPage, filters, false);
     }
   }, [hasMore, loading, page, loadArticles, filters]);
+
+  const handleApplyFilters = useCallback((newFilters: ArticleFilters) => {
+    setFilters(newFilters);
+    setPage(0);
+    loadArticles(0, newFilters, true);
+  }, [loadArticles]);
+
+  const hasActiveFilters = filters.search || filters.gender || filters.category || 
+                          (filters.colors && filters.colors.length > 0) || 
+                          (filters.sizes && filters.sizes.length > 0);
 
   const handleLikeChange = (articleId: string, isLiked: boolean) => {
     setArticles(prev =>
@@ -209,100 +210,16 @@ export const HomeScreen: React.FC = () => {
       ]}>
         <Text style={styles.title}>Kaprayy</Text>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Text style={styles.heartIcon}>♡</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
-            <Text style={styles.signOutText}>Sign Out</Text>
+          <TouchableOpacity 
+            style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
+            onPress={() => setShowFiltersModal(true)}
+          >
+            <Text style={[styles.filterIcon, hasActiveFilters && styles.activeFilterIconText]}>⚙</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      {/* Gender Filter */}
-      <Animated.View style={[
-        styles.genderFilterContainer,
-        { 
-          opacity: headerOpacity,
-          transform: [{ translateY: headerTranslateY }]
-        }
-      ]}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 20 }}
-        >
-          {genders.map((gender) => (
-            <TouchableOpacity
-              key={gender}
-              style={[
-                styles.filterButton,
-                selectedGender === gender && styles.activeFilterButton,
-              ]}
-              onPress={() => setSelectedGender(gender as any)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedGender === gender && styles.activeFilterText,
-                ]}
-              >
-                {gender.charAt(0).toUpperCase() + gender.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </Animated.View>
 
-      {/* Category Filter */}
-      <Animated.View style={[
-        styles.categoryFilterContainer,
-        { 
-          opacity: headerOpacity,
-          transform: [{ translateY: headerTranslateY }]
-        }
-      ]}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 20 }}
-        >
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              selectedCategory === 'all' && styles.activeFilterButton,
-            ]}
-            onPress={() => setSelectedCategory('all')}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                selectedCategory === 'all' && styles.activeFilterText,
-              ]}
-            >
-              All
-            </Text>
-          </TouchableOpacity>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.filterButton,
-                selectedCategory === category && styles.activeFilterButton,
-              ]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedCategory === category && styles.activeFilterText,
-                ]}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </Animated.View>
 
       <FlatList
         data={articles}
@@ -323,6 +240,13 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.emptySubText}>Try adjusting your filters</Text>
           </View>
         }
+      />
+      
+      <FiltersModal
+        visible={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={filters}
       />
     </SafeAreaView>
   );
@@ -363,67 +287,19 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 10,
   },
-  heartIcon: {
-    fontSize: 24,
+  filterIcon: {
+    fontSize: 20,
     color: '#ffffff',
   },
-  signOutButton: {
-    padding: 8,
-  },
-  signOutText: {
-    color: '#666666',
-    fontSize: 14,
-  },
-  filterContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  genderFilterContainer: {
-    position: 'absolute',
-    top: 110, // Below header with more space
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: '#000000',
-  },
-  categoryFilterContainer: {
-    position: 'absolute',
-    top: 150, // Below gender filter with more space
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: '#000000',
-  },
-  filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginRight: 6,
-    borderRadius: 18,
-    backgroundColor: '#222222',
-    borderWidth: 1,
-    borderColor: '#333333',
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  activeFilterButton: {
+  activeFilterIcon: {
     backgroundColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderRadius: 16,
   },
-  filterText: {
-    fontSize: 13,
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  activeFilterText: {
+  activeFilterIconText: {
     color: '#000000',
-    fontWeight: '600',
   },
   listContainer: {
-    paddingTop: 190, // Space for header and both filters with new spacing
+    paddingTop: 75, // Just enough space for the header (60 + 12 + some text space)
     paddingBottom: 20,
   },
   articleContainer: {

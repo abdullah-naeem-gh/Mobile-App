@@ -6,6 +6,8 @@ export interface ArticleFilters {
   category?: CategoryType;
   brandId?: string;
   search?: string;
+  colors?: string[];
+  sizes?: string[];
   limit?: number;
 }
 
@@ -44,6 +46,12 @@ export const articleService = {
       }
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      }
+      if (filters.colors && filters.colors.length > 0) {
+        query = query.overlaps('colors', filters.colors);
+      }
+      if (filters.sizes && filters.sizes.length > 0) {
+        query = query.overlaps('sizes', filters.sizes);
       }
 
       const { data, error } = await query;
