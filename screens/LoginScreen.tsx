@@ -8,6 +8,9 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -41,74 +44,87 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Log in</Text>
-      </View>
-
-      <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (error) setError(null); // Clear error when user starts typing
-            }}
-            placeholder="Enter your email"
-            placeholderTextColor="#666666"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Log in</Text>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (error) setError(null); // Clear error when user starts typing
-            }}
-            placeholder="Enter your password"
-            placeholderTextColor="#666666"
-            secureTextEntry
-          />
-        </View>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (error) setError(null); // Clear error when user starts typing
+                }}
+                placeholder="Enter your email"
+                placeholderTextColor="#666666"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (error) setError(null); // Clear error when user starts typing
+                }}
+                placeholder="Enter your password"
+                placeholderTextColor="#666666"
+                secureTextEntry
+              />
+            </View>
 
-        <View style={styles.buttonContainer}>
-          <View style={styles.brushStrokeContainer}>
-            <View style={styles.brushStroke} />
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#000000" />
-              ) : (
-                <Text style={styles.loginButtonText}>Log in</Text>
-              )}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            <View style={styles.buttonContainer}>
+              <View style={styles.brushStrokeContainer}>
+                <View style={styles.brushStroke} />
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#000000" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Log in</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+              <Text style={styles.switchText}>
+                Don't have an account? <Text style={styles.switchLink}>Sign up</Text>
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={styles.switchText}>
-            Don't have an account? <Text style={styles.switchLink}>Sign up</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -118,12 +134,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   backButton: {
     fontSize: 24,
@@ -134,6 +153,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   form: {
     flex: 1,

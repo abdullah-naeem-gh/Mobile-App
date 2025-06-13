@@ -41,6 +41,7 @@ export const PostScreen: React.FC = () => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Article specific fields
   const [price, setPrice] = useState('');
@@ -137,18 +138,19 @@ export const PostScreen: React.FC = () => {
   // Submit post
   const handleSubmit = async () => {
     if (!title || !description || !imageUri) {
-      Alert.alert('Error', 'Please fill all required fields and add an image');
+      setError('Please fill all required fields and add an image');
       return;
     }
     
     // Check if user is logged in and has an ID
     if (!user?.id || !session) {
-      Alert.alert('Error', 'You must be logged in to create a post');
+      setError('You must be logged in to create a post');
       return;
     }
     
     try {
       setUploading(true);
+      setError(null); // Clear any previous errors
       
       // Upload image first
       const bucketName = postType === 'article' ? 'article_images' : 'outfit_images';
@@ -234,7 +236,7 @@ export const PostScreen: React.FC = () => {
       
     } catch (error) {
       console.error('Post error:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'An error occurred');
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setUploading(false);
     }
@@ -244,7 +246,8 @@ export const PostScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.header}>
           <Text style={styles.title}>Create Post</Text>
@@ -286,7 +289,12 @@ export const PostScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
         
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
           {/* Image Upload Section */}
           <View style={[styles.imageSection, postType === 'outfit' && imageUri && styles.outfitImageSection]}>
             {postType === 'outfit' && imageUri ? (
@@ -323,7 +331,10 @@ export const PostScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={title}
-              onChangeText={setTitle}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (error) setError(null);
+              }}
               placeholder="Enter title"
               placeholderTextColor="#666"
             />
@@ -334,13 +345,22 @@ export const PostScreen: React.FC = () => {
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
-              onChangeText={setDescription}
+              onChangeText={(text) => {
+                setDescription(text);
+                if (error) setError(null);
+              }}
               placeholder="Enter description"
               placeholderTextColor="#666"
               multiline
               numberOfLines={4}
             />
           </View>
+
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
           
           {/* Article specific fields */}
           {postType === 'article' && (
@@ -351,7 +371,10 @@ export const PostScreen: React.FC = () => {
                   <TextInput
                     style={styles.input}
                     value={price}
-                    onChangeText={setPrice}
+                    onChangeText={(text) => {
+                      setPrice(text);
+                      if (error) setError(null);
+                    }}
                     placeholder="Enter price"
                     placeholderTextColor="#666"
                     keyboardType="numeric"
@@ -362,7 +385,10 @@ export const PostScreen: React.FC = () => {
                   <TextInput
                     style={styles.input}
                     value={currency}
-                    onChangeText={setCurrency}
+                    onChangeText={(text) => {
+                      setCurrency(text);
+                      if (error) setError(null);
+                    }}
                     placeholder="e.g. PKR"
                     placeholderTextColor="#666"
                     defaultValue="PKR"
@@ -417,7 +443,10 @@ export const PostScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={sizes}
-                  onChangeText={setSizes}
+                  onChangeText={(text) => {
+                    setSizes(text);
+                    if (error) setError(null);
+                  }}
                   placeholder="e.g. S, M, L, XL"
                   placeholderTextColor="#666"
                 />
@@ -428,7 +457,10 @@ export const PostScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={colors}
-                  onChangeText={setColors}
+                  onChangeText={(text) => {
+                    setColors(text);
+                    if (error) setError(null);
+                  }}
                   placeholder="e.g. Red, Blue, Black"
                   placeholderTextColor="#666"
                 />
@@ -439,7 +471,10 @@ export const PostScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={tags}
-                  onChangeText={setTags}
+                  onChangeText={(text) => {
+                    setTags(text);
+                    if (error) setError(null);
+                  }}
                   placeholder="e.g. trendy, casual, summer"
                   placeholderTextColor="#666"
                 />
@@ -450,7 +485,10 @@ export const PostScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={purchaseUrl}
-                  onChangeText={setPurchaseUrl}
+                  onChangeText={(text) => {
+                    setPurchaseUrl(text);
+                    if (error) setError(null);
+                  }}
                   placeholder="Enter website URL to purchase"
                   placeholderTextColor="#666"
                   keyboardType="url"
@@ -489,7 +527,10 @@ export const PostScreen: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   value={styleTags}
-                  onChangeText={setStyleTags}
+                  onChangeText={(text) => {
+                    setStyleTags(text);
+                    if (error) setError(null);
+                  }}
                   placeholder="e.g. casual, streetwear, vintage"
                   placeholderTextColor="#666"
                 />
@@ -574,6 +615,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -610,6 +654,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   imageSection: {
     marginBottom: 20,
@@ -668,6 +715,19 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
+  },
+  errorContainer: {
+    backgroundColor: '#ff0000',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   pickerContainer: {
     backgroundColor: '#111111',

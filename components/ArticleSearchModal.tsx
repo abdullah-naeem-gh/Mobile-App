@@ -10,6 +10,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { articleService } from '../services/articleService';
@@ -119,92 +121,99 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
       presentationStyle="pageSheet"
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Select Article</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Select Article</Text>
+            <View style={styles.placeholder} />
+          </View>
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color="#666" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search articles..."
-              placeholderTextColor="#666"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchQuery('')}
-                style={styles.clearButton}
-              >
-                <Ionicons name="close-circle" size={20} color="#666" />
-              </TouchableOpacity>
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <Ionicons name="search" size={20} color="#666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search articles..."
+                placeholderTextColor="#666"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearButton}
+                >
+                  <Ionicons name="close-circle" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.content}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.loadingText}>Searching...</Text>
+              </View>
+            ) : searchQuery.length < 2 ? (
+              <View style={styles.instructionContainer}>
+                <Ionicons name="search" size={48} color="#666" />
+                <Text style={styles.instructionText}>
+                  Type at least 2 characters to search
+                </Text>
+              </View>
+            ) : articles.length === 0 && hasSearched ? (
+              <View style={styles.noResultsContainer}>
+                <Ionicons name="sad-outline" size={48} color="#666" />
+                <Text style={styles.noResultsText}>
+                  No articles found for "{searchQuery}"
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={articles}
+                renderItem={renderArticleItem}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.listContainer}
+                keyboardShouldPersistTaps="handled"
+              />
             )}
           </View>
-        </View>
 
-        <View style={styles.content}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#fff" />
-              <Text style={styles.loadingText}>Searching...</Text>
-            </View>
-          ) : searchQuery.length < 2 ? (
-            <View style={styles.instructionContainer}>
-              <Ionicons name="search" size={48} color="#666" />
-              <Text style={styles.instructionText}>
-                Type at least 2 characters to search
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={handleClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.confirmButton,
+                !currentSelectedArticle && styles.disabledButton,
+              ]}
+              onPress={handleConfirm}
+              disabled={!currentSelectedArticle}
+            >
+              <Text style={[
+                styles.confirmButtonText,
+                !currentSelectedArticle && styles.disabledButtonText,
+              ]}>
+                {currentSelectedArticle ? 'Confirm' : 'Select Article'}
               </Text>
-            </View>
-          ) : articles.length === 0 && hasSearched ? (
-            <View style={styles.noResultsContainer}>
-              <Ionicons name="sad-outline" size={48} color="#666" />
-              <Text style={styles.noResultsText}>
-                No articles found for "{searchQuery}"
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={articles}
-              renderItem={renderArticleItem}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContainer}
-            />
-          )}
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.cancelButton]}
-            onPress={handleClose}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.confirmButton,
-              !currentSelectedArticle && styles.disabledButton,
-            ]}
-            onPress={handleConfirm}
-            disabled={!currentSelectedArticle}
-          >
-            <Text style={[
-              styles.confirmButtonText,
-              !currentSelectedArticle && styles.disabledButtonText,
-            ]}>
-              {currentSelectedArticle ? 'Confirm' : 'Select Article'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -214,6 +223,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
