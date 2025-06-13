@@ -31,7 +31,9 @@ export const HomeScreen: React.FC = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [headerVisible, setHeaderVisible] = useState(true);
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const isScrollingDown = useRef(false);
 
   const loadArticles = useCallback(async (
     currentPage: number = 0, 
@@ -145,14 +147,43 @@ export const HomeScreen: React.FC = () => {
       useNativeDriver: false,
       listener: (event: any) => {
         const currentOffset = event.nativeEvent.contentOffset.y;
-        setHeaderVisible(currentOffset < 50);
+        const diff = currentOffset - lastScrollY.current;
+        
+        if (Math.abs(diff) > 5) { // Only animate if scroll difference is significant
+          if (currentOffset <= 0) {
+            // At the top, always show header
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else if (diff > 0 && !isScrollingDown.current) {
+            // Scrolling down, hide header
+            isScrollingDown.current = true;
+            Animated.timing(headerTranslateY, {
+              toValue: -100,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else if (diff < 0 && isScrollingDown.current) {
+            // Scrolling up, show header
+            isScrollingDown.current = false;
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          }
+          
+          lastScrollY.current = currentOffset;
+        }
       }
     }
   );
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [1, 0],
+  const headerOpacity = headerTranslateY.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
@@ -169,7 +200,13 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+      <Animated.View style={[
+        styles.header, 
+        { 
+          opacity: headerOpacity,
+          transform: [{ translateY: headerTranslateY }]
+        }
+      ]}>
         <Text style={styles.title}>Kaprayy</Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.iconButton}>
@@ -182,66 +219,90 @@ export const HomeScreen: React.FC = () => {
       </Animated.View>
 
       {/* Gender Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-        {genders.map((gender) => (
-          <TouchableOpacity
-            key={gender}
-            style={[
-              styles.filterButton,
-              selectedGender === gender && styles.activeFilterButton,
-            ]}
-            onPress={() => setSelectedGender(gender as any)}
-          >
-            <Text
+      <Animated.View style={[
+        styles.genderFilterContainer,
+        { 
+          opacity: headerOpacity,
+          transform: [{ translateY: headerTranslateY }]
+        }
+      ]}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 20 }}
+        >
+          {genders.map((gender) => (
+            <TouchableOpacity
+              key={gender}
               style={[
-                styles.filterText,
-                selectedGender === gender && styles.activeFilterText,
+                styles.filterButton,
+                selectedGender === gender && styles.activeFilterButton,
               ]}
+              onPress={() => setSelectedGender(gender as any)}
             >
-              {gender.charAt(0).toUpperCase() + gender.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedGender === gender && styles.activeFilterText,
+                ]}
+              >
+                {gender.charAt(0).toUpperCase() + gender.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
 
       {/* Category Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedCategory === 'all' && styles.activeFilterButton,
-          ]}
-          onPress={() => setSelectedCategory('all')}
+      <Animated.View style={[
+        styles.categoryFilterContainer,
+        { 
+          opacity: headerOpacity,
+          transform: [{ translateY: headerTranslateY }]
+        }
+      ]}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 20 }}
         >
-          <Text
-            style={[
-              styles.filterText,
-              selectedCategory === 'all' && styles.activeFilterText,
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-        {categories.map((category) => (
           <TouchableOpacity
-            key={category}
             style={[
               styles.filterButton,
-              selectedCategory === category && styles.activeFilterButton,
+              selectedCategory === 'all' && styles.activeFilterButton,
             ]}
-            onPress={() => setSelectedCategory(category)}
+            onPress={() => setSelectedCategory('all')}
           >
             <Text
               style={[
                 styles.filterText,
-                selectedCategory === category && styles.activeFilterText,
+                selectedCategory === 'all' && styles.activeFilterText,
               ]}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              All
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.filterButton,
+                selectedCategory === category && styles.activeFilterButton,
+              ]}
+              onPress={() => setSelectedCategory(category)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedCategory === category && styles.activeFilterText,
+                ]}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
 
       <FlatList
         data={articles}
@@ -273,12 +334,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingHorizontal: 15,
+    paddingTop: 60, // Account for SafeAreaView
+    paddingBottom: 12,
+    backgroundColor: '#000000',
     borderBottomWidth: 0.5,
     borderBottomColor: '#333333',
   },
@@ -311,28 +378,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 10,
   },
-  filterButton: {
-    paddingHorizontal: 16,
+  genderFilterContainer: {
+    position: 'absolute',
+    top: 110, // Below header with more space
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    paddingHorizontal: 15,
     paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
+    backgroundColor: '#000000',
+  },
+  categoryFilterContainer: {
+    position: 'absolute',
+    top: 150, // Below gender filter with more space
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#000000',
+  },
+  filterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginRight: 6,
+    borderRadius: 18,
     backgroundColor: '#222222',
     borderWidth: 1,
     borderColor: '#333333',
+    minWidth: 60,
+    alignItems: 'center',
   },
   activeFilterButton: {
     backgroundColor: '#ffffff',
     borderColor: '#ffffff',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#ffffff',
+    textAlign: 'center',
   },
   activeFilterText: {
     color: '#000000',
     fontWeight: '600',
   },
   listContainer: {
+    paddingTop: 190, // Space for header and both filters with new spacing
     paddingBottom: 20,
   },
   articleContainer: {

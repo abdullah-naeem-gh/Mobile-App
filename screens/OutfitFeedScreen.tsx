@@ -22,6 +22,9 @@ export const OutfitFeedScreen: React.FC = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const isScrollingDown = useRef(false);
 
   const loadOutfits = useCallback(async (
     currentPage: number = 0,
@@ -169,12 +172,47 @@ export const OutfitFeedScreen: React.FC = () => {
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: false }
+    { 
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentOffset = event.nativeEvent.contentOffset.y;
+        const diff = currentOffset - lastScrollY.current;
+        
+        if (Math.abs(diff) > 5) { // Only animate if scroll difference is significant
+          if (currentOffset <= 0) {
+            // At the top, always show header
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else if (diff > 0 && !isScrollingDown.current) {
+            // Scrolling down, hide header
+            isScrollingDown.current = true;
+            Animated.timing(headerTranslateY, {
+              toValue: -100,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else if (diff < 0 && isScrollingDown.current) {
+            // Scrolling up, show header
+            isScrollingDown.current = false;
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          }
+          
+          lastScrollY.current = currentOffset;
+        }
+      }
+    }
   );
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [1, 0],
+  const headerOpacity = headerTranslateY.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
@@ -190,7 +228,13 @@ export const OutfitFeedScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+      <Animated.View style={[
+        styles.header, 
+        { 
+          opacity: headerOpacity,
+          transform: [{ translateY: headerTranslateY }]
+        }
+      ]}>
         <Text style={styles.title}>Outfits</Text>
         <TouchableOpacity style={styles.iconButton}>
           <Text style={styles.heartIcon}>♡</Text>
@@ -227,12 +271,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingHorizontal: 15,
+    paddingTop: 60, // Account for SafeAreaView
+    paddingBottom: 12,
+    backgroundColor: '#000000',
     borderBottomWidth: 0.5,
     borderBottomColor: '#333333',
   },
@@ -250,6 +300,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   listContainer: {
+    paddingTop: 110, // Space for header with better spacing
     paddingBottom: 20,
   },
   emptyContainer: {
