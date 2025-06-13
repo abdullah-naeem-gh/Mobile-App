@@ -10,6 +10,8 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  FlatList,
+  RefreshControl,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -48,10 +50,21 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedContent, setSelectedContent] = useState<ContentType>('articles');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [outfits, setOutfits] = useState<any[]>([]);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (profile && userRole) {
+      loadContent();
+    }
+  }, [profile, userRole, selectedContent]);
 
   const loadProfile = async () => {
     if (!user || !userRole) return;
@@ -176,6 +189,88 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const loadContent = async () => {
+    if (!user || !userRole) return;
+    
+    setContentLoading(true);
+    setContentError(null);
+    try {
+      if (userRole === 'brand') {
+        if (selectedContent === 'articles') {
+          // Load articles for brand
+          const { data, error } = await supabase
+            .from('articles')
+            .select(`
+              id,
+              title,
+              image_urls,
+              price,
+              currency,
+              created_at
+            `)
+            .eq('brand_id', user.id)
+            .eq('is_available', true)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error loading articles:', error);
+          } else {
+            setArticles(data || []);
+          }
+        } else {
+          // Load outfits for brand
+          const { data, error } = await supabase
+            .from('outfits')
+            .select(`
+              id,
+              title,
+              image_url,
+              created_at
+            `)
+            .eq('brand_id', user.id)
+            .eq('is_public', true)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error loading outfits:', error);
+          } else {
+            setOutfits(data || []);
+          }
+        }
+      } else {
+        // Load outfits for user (consumers don't have articles)
+        const { data, error } = await supabase
+          .from('outfits')
+          .select(`
+            id,
+            title,
+            image_url,
+            created_at
+          `)
+          .eq('user_id', user.id)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error loading outfits:', error);
+        } else {
+          setOutfits(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Content loading error:', error);
+      setContentError('Failed to load content. Please try again.');
+    } finally {
+      setContentLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadProfile(), loadContent()]);
+    setRefreshing(false);
+  };
+
   const handleEditProfile = () => {
     Alert.alert('Edit Profile', 'Edit profile functionality will be implemented');
   };
@@ -195,6 +290,91 @@ export const ProfileScreen: React.FC = () => {
 
   const isBrand = userRole === 'brand';
   const isOwnProfile = true; // Since this is the logged-in user's profile
+
+  const handleContentTypeChange = (contentType: ContentType) => {
+    if (contentType === selectedContent) return; // Don't reload if same type
+    
+    setSelectedContent(contentType);
+    setContentError(null);
+    
+    // Clear previous content when switching to show immediate feedback
+    if (contentType === 'articles') {
+      setOutfits([]);
+    } else {
+      setArticles([]);
+    }
+  };
+
+  const renderGridItem = ({ item, index }: { item: any; index: number }) => {
+    const isArticle = selectedContent === 'articles';
+    const imageUrl = isArticle 
+      ? (item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : null)
+      : item.image_url;
+
+    const [imageLoading, setImageLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
+
+    return (
+      <TouchableOpacity 
+        style={styles.gridItem}
+        onPress={() => handleContentPress(item, isArticle)}
+        activeOpacity={0.8}
+      >
+        {imageUrl ? (
+          <>
+            {imageLoading && (
+              <View style={styles.gridImageLoading}>
+                <ActivityIndicator size="small" color="#666666" />
+              </View>
+            )}
+            <Image 
+              source={{ uri: imageUrl }} 
+              style={styles.gridImage}
+              resizeMode="cover"
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageLoading(false);
+                setImageError(true);
+              }}
+            />
+          </>
+        ) : (
+          <View style={styles.gridImagePlaceholder}>
+            <Text style={styles.gridImagePlaceholderText}>No Image</Text>
+          </View>
+        )}
+        {isArticle && item.price && !imageLoading && (
+          <View style={styles.priceOverlay}>
+            <Text style={styles.priceText}>
+              {item.currency || 'PKR'} {item.price}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const handleContentPress = (item: any, isArticle: boolean) => {
+    Alert.alert(
+      isArticle ? 'Article Details' : 'Outfit Details',
+      `${isArticle ? 'Article' : 'Outfit'}: ${item.title || 'Untitled'}\n\nCreated: ${new Date(item.created_at).toLocaleDateString()}`,
+      [
+        { text: 'View Details', onPress: () => {
+          // TODO: Navigate to detailed view
+          console.log(`Navigate to ${isArticle ? 'article' : 'outfit'} details:`, item.id);
+        }},
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const getContentData = () => {
+    if (isBrand) {
+      return selectedContent === 'articles' ? articles : outfits;
+    } else {
+      return outfits;
+    }
+  };
 
   if (loading) {
     return (
@@ -218,7 +398,17 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#ffffff"
+            colors={["#ffffff"]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.username}>
@@ -331,35 +521,77 @@ export const ProfileScreen: React.FC = () => {
                 styles.contentTab,
                 selectedContent === 'articles' && styles.activeContentTab,
               ]}
-              onPress={() => setSelectedContent('articles')}
+              onPress={() => handleContentTypeChange('articles')}
             >
               <Text style={styles.contentTabIcon}>📰</Text>
+              <Text style={styles.contentTabCount}>{articles.length}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.contentTab,
                 selectedContent === 'outfits' && styles.activeContentTab,
               ]}
-              onPress={() => setSelectedContent('outfits')}
+              onPress={() => handleContentTypeChange('outfits')}
             >
               <Text style={styles.contentTabIcon}>👕</Text>
+              <Text style={styles.contentTabCount}>{outfits.length}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Content Grid Placeholder */}
+        {/* Content Grid */}
         <View style={styles.contentGrid}>
-          <View style={styles.contentPlaceholder}>
-            <Text style={styles.placeholderText}>
-              {isBrand 
-                ? `${selectedContent === 'articles' ? 'Articles' : 'Outfits'} will be displayed here`
-                : 'Outfits will be displayed here'
-              }
-            </Text>
-            <Text style={styles.placeholderSubText}>
-              Content grid implementation coming soon
-            </Text>
-          </View>
+          {contentLoading ? (
+            <View style={styles.contentLoadingContainer}>
+              <ActivityIndicator size="large" color="#ffffff" />
+              <Text style={styles.loadingText}>Loading {isBrand ? selectedContent : 'outfits'}...</Text>
+            </View>
+          ) : contentError ? (
+            <View style={styles.contentErrorContainer}>
+              <Text style={styles.errorText}>{contentError}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadContent}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {getContentData().length > 0 ? (
+                <FlatList
+                  data={getContentData()}
+                  renderItem={renderGridItem}
+                  numColumns={3}
+                  keyExtractor={(item) => item.id}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={false}
+                  contentContainerStyle={styles.gridContainer}
+                  columnWrapperStyle={getContentData().length > 0 ? styles.gridRow : undefined}
+                />
+              ) : (
+                <View style={styles.contentPlaceholder}>
+                  <Text style={styles.placeholderIcon}>
+                    {isBrand ? (selectedContent === 'articles' ? '📰' : '👕') : '👕'}
+                  </Text>
+                  <Text style={styles.placeholderText}>
+                    No {isBrand ? selectedContent : 'outfits'} uploaded yet
+                  </Text>
+                  <Text style={styles.placeholderSubText}>
+                    Start creating {isBrand ? selectedContent : 'outfits'} to see them here
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.createButton}
+                    onPress={() => Alert.alert(
+                      'Create Content', 
+                      `Navigate to create ${isBrand ? selectedContent : 'outfit'} screen`
+                    )}
+                  >
+                    <Text style={styles.createButtonText}>
+                      Create {isBrand ? (selectedContent === 'articles' ? 'Article' : 'Outfit') : 'Outfit'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -557,7 +789,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ffffff',
   },
   contentTabIcon: {
-    fontSize: 24,
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  contentTabCount: {
+    fontSize: 11,
+    color: '#666666',
+    fontWeight: '500',
   },
   contentGrid: {
     paddingHorizontal: 20,
@@ -570,6 +808,11 @@ const styles = StyleSheet.create({
     borderColor: '#333333',
     borderRadius: 8,
   },
+  placeholderIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+    opacity: 0.6,
+  },
   placeholderText: {
     fontSize: 16,
     color: '#ffffff',
@@ -580,5 +823,99 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  createButton: {
+    backgroundColor: '#0095f6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Grid styles
+  contentLoadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 14,
+    marginTop: 10,
+  },
+  contentErrorContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#0095f6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  gridContainer: {
+    paddingBottom: 20,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+  },
+  gridItem: {
+    width: (width - 50) / 3, // Account for padding and gaps between items
+    aspectRatio: 1,
+    marginBottom: 2,
+    marginHorizontal: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#111111',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  gridImageLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    zIndex: 1,
+  },
+  gridImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#222222',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gridImagePlaceholderText: {
+    color: '#666666',
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  priceOverlay: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  priceText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '600',
   },
 });
