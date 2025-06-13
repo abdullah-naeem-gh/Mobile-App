@@ -10,8 +10,8 @@ interface AuthContextType {
   loading: boolean;
   isNewUser: boolean;
   signUp: (email: string, password: string, role: 'consumer' | 'brand') => Promise<{ error?: any }>;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
+  signOut: () => Promise<{ error?: any }>;
   completeOnboarding: () => Promise<void>;
 }
 
@@ -199,13 +199,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       
       if (error) {
-        throw error;
+        console.error('SignIn error:', error);
+        return { error };
       }
       
       // checkIfNewUser will be called automatically by the auth state change
+      return {};
     } catch (error) {
       console.error('SignIn error:', error);
-      throw error;
+      return { error };
     }
   };
 
@@ -213,13 +215,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        throw error;
+        console.error('SignOut error:', error);
+        return { error };
       }
       setUserRole(null);
       setIsNewUser(false);
+      return {};
     } catch (error) {
       console.error('SignOut error:', error);
-      throw error;
+      return { error };
     }
   };
 

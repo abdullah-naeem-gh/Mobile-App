@@ -19,20 +19,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    setError(null); // Clear any previous errors
+    
+    const { error: signInError } = await signIn(email, password);
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Login Error', error.message);
+    if (signInError) {
+      setError(signInError.message || 'Login failed. Please try again.');
     }
   };
 
@@ -51,7 +54,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <TextInput
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (error) setError(null); // Clear error when user starts typing
+            }}
             placeholder="Enter your email"
             placeholderTextColor="#666666"
             keyboardType="email-address"
@@ -64,12 +70,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <TextInput
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (error) setError(null); // Clear error when user starts typing
+            }}
             placeholder="Enter your password"
             placeholderTextColor="#666666"
             secureTextEntry
           />
         </View>
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         <View style={styles.buttonContainer}>
           <View style={styles.brushStrokeContainer}>
@@ -142,6 +157,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     backgroundColor: '#111111',
+  },
+  errorContainer: {
+    backgroundColor: '#ff0000',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  errorText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   buttonContainer: {
     marginTop: 40,
