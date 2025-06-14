@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { MenuScreen } from './MenuScreen';
+import { SavedScreen } from './SavedScreen';
 import {
   View,
   Text,
@@ -13,8 +17,6 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -55,6 +57,11 @@ export const ProfileScreen: React.FC = () => {
   const [contentLoading, setContentLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showSavedScreen, setShowSavedScreen] = useState(false);
+  // Add state for image loading/errors that will be used by all grid items
+  const [imageLoadingStates, setImageLoadingStates] = useState<{[key: string]: boolean}>({});
+  const [imageErrorStates, setImageErrorStates] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     loadProfile();
@@ -65,6 +72,26 @@ export const ProfileScreen: React.FC = () => {
       loadContent();
     }
   }, [profile, userRole, selectedContent]);
+
+  // Initialize loading states whenever content data changes
+  useEffect(() => {
+    const contentData = getContentData();
+    if (contentData && contentData.length > 0) {
+      const newLoadingStates: {[key: string]: boolean} = {};
+      contentData.forEach(item => {
+        if (imageLoadingStates[item.id] === undefined) {
+          newLoadingStates[item.id] = true;
+        }
+      });
+      
+      if (Object.keys(newLoadingStates).length > 0) {
+        setImageLoadingStates(prev => ({
+          ...prev,
+          ...newLoadingStates
+        }));
+      }
+    }
+  }, [articles, outfits]);
 
   const loadProfile = async () => {
     if (!user || !userRole) return;
@@ -288,6 +315,40 @@ export const ProfileScreen: React.FC = () => {
     // TODO: Implement actual follow/unfollow logic
   };
 
+  const handleMenuOpen = () => {
+    setShowMenu(true);
+  };
+
+  const handleMenuClose = () => {
+    setShowMenu(false);
+  };
+
+  const handleMenuNavigate = (screen: string) => {
+    switch (screen) {
+      case 'Saved':
+        setShowSavedScreen(true);
+        break;
+      case 'AccountSettings':
+        Alert.alert('Account Settings', 'Account settings functionality will be implemented');
+        break;
+      case 'Likes':
+        Alert.alert('Likes', 'Likes functionality will be implemented');
+        break;
+      case 'Followers':
+        Alert.alert('Followers', 'Followers functionality will be implemented');
+        break;
+      case 'Following':
+        Alert.alert('Following', 'Following functionality will be implemented');
+        break;
+      default:
+        console.log('Unknown menu item:', screen);
+    }
+  };
+
+  const handleSavedScreenBack = () => {
+    setShowSavedScreen(false);
+  };
+
   const isBrand = userRole === 'brand';
   const isOwnProfile = true; // Since this is the logged-in user's profile
 
@@ -305,14 +366,33 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const handleImageLoaded = (itemId: string) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [itemId]: false
+    }));
+  };
+
+  const handleImageError = (itemId: string) => {
+    setImageLoadingStates(prev => ({
+      ...prev,
+      [itemId]: false
+    }));
+    setImageErrorStates(prev => ({
+      ...prev,
+      [itemId]: true
+    }));
+  };
+
   const renderGridItem = ({ item, index }: { item: any; index: number }) => {
     const isArticle = selectedContent === 'articles';
     const imageUrl = isArticle 
       ? (item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : null)
       : item.image_url;
-
-    const [imageLoading, setImageLoading] = useState(true);
-    const [imageError, setImageError] = useState(false);
+    
+    const imageId = item.id;
+    const isImageLoading = imageLoadingStates[imageId] !== false;
+    const hasImageError = imageErrorStates[imageId] === true;
 
     return (
       <TouchableOpacity 
@@ -322,7 +402,7 @@ export const ProfileScreen: React.FC = () => {
       >
         {imageUrl ? (
           <>
-            {imageLoading && (
+            {isImageLoading && (
               <View style={styles.gridImageLoading}>
                 <ActivityIndicator size="small" color="#666666" />
               </View>
@@ -331,11 +411,8 @@ export const ProfileScreen: React.FC = () => {
               source={{ uri: imageUrl }} 
               style={styles.gridImage}
               resizeMode="cover"
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
-                setImageLoading(false);
-                setImageError(true);
-              }}
+              onLoad={() => handleImageLoaded(imageId)}
+              onError={() => handleImageError(imageId)}
             />
           </>
         ) : (
@@ -343,7 +420,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.gridImagePlaceholderText}>No Image</Text>
           </View>
         )}
-        {isArticle && item.price && !imageLoading && (
+        {isArticle && item.price && !isImageLoading && (
           <View style={styles.priceOverlay}>
             <Text style={styles.priceText}>
               {item.currency || 'PKR'} {item.price}
@@ -375,6 +452,10 @@ export const ProfileScreen: React.FC = () => {
       return outfits;
     }
   };
+
+  if (showSavedScreen) {
+    return <SavedScreen onBack={handleSavedScreenBack} />;
+  }
 
   if (loading) {
     return (
@@ -418,7 +499,7 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
               <Text style={styles.headerButtonText}>⚙️</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={signOut} style={styles.headerButton}>
+            <TouchableOpacity onPress={handleMenuOpen} style={styles.headerButton}>
               <Text style={styles.headerButtonText}>☰</Text>
             </TouchableOpacity>
           </View>
@@ -594,6 +675,13 @@ export const ProfileScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+      
+      {/* Menu Screen */}
+      <MenuScreen
+        visible={showMenu}
+        onClose={handleMenuClose}
+        onNavigate={handleMenuNavigate}
+      />
     </SafeAreaView>
   );
 };
