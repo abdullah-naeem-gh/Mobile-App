@@ -154,22 +154,6 @@ export const OutfitFeedScreen: React.FC = () => {
     }
   };
 
-  const handleShowArticles = (outfit: any) => {
-    if (outfit.outfit_articles && outfit.outfit_articles.length > 0) {
-      Alert.alert(
-        'Tagged Articles',
-        `This outfit has ${outfit.outfit_articles.length} tagged article(s). Navigation to article details coming soon!`,
-        [{ text: 'OK' }]
-      );
-    } else {
-      Alert.alert(
-        'No Articles Tagged',
-        'This outfit doesn\'t have any tagged articles yet.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     { 
@@ -222,7 +206,6 @@ export const OutfitFeedScreen: React.FC = () => {
       onPress={handleOutfitPress}
       onLikeChange={handleLikeChange}
       onSaveChange={handleSaveChange}
-      onShowArticles={handleShowArticles}
     />
   );
 

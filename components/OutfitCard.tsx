@@ -47,7 +47,6 @@ interface OutfitCardProps {
   onPress: (outfit: Outfit) => void;
   onLikeChange: (outfitId: string, isLiked: boolean) => void;
   onSaveChange: (outfitId: string, isSaved: boolean) => void;
-  onShowArticles: (outfit: Outfit) => void;
 }
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
@@ -55,10 +54,10 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   onPress,
   onLikeChange,
   onSaveChange,
-  onShowArticles,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [showArticles, setShowArticles] = useState(false);
 
   // Get the first image URL from the array
   const imageUrl = outfit.image_urls && outfit.image_urls.length > 0 ? outfit.image_urls[0] : null;
@@ -131,7 +130,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 resizeMode="cover"
               />
               {/* Outfit Tags Overlay */}
-              {!imageLoading && outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
+              {!imageLoading && outfit.outfit_articles && outfit.outfit_articles.length > 0 && showArticles && (
                 <OutfitTagsOverlay 
                   outfitArticles={outfit.outfit_articles}
                   showCards={true}
@@ -178,15 +177,25 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
       </View>
 
       {/* Show Articles Button */}
-      <View style={styles.showArticlesContainer}>
-        <TouchableOpacity 
-          style={styles.showArticlesButton}
-          onPress={() => onShowArticles(outfit)}
-        >
-          <Text style={styles.showArticlesText}>Show Articles</Text>
-          <Text style={styles.showArticlesIcon}>👕</Text>
-        </TouchableOpacity>
-      </View>
+      {outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
+        <View style={styles.showArticlesContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.showArticlesButton,
+              showArticles && styles.showArticlesButtonActive
+            ]}
+            onPress={() => setShowArticles(!showArticles)}
+          >
+            <Text style={[
+              styles.showArticlesText,
+              showArticles && styles.showArticlesTextActive
+            ]}>
+              {showArticles ? 'Hide Articles' : 'Show Articles'}
+            </Text>
+            <Text style={styles.showArticlesIcon}>👕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -347,11 +356,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
   },
+  showArticlesButtonActive: {
+    backgroundColor: '#333333',
+    borderColor: '#555555',
+  },
   showArticlesText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
     marginRight: 8,
+  },
+  showArticlesTextActive: {
+    color: '#ffffff',
   },
   showArticlesIcon: {
     fontSize: 16,
