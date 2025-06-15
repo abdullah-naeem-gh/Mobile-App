@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { OutfitTagsOverlay } from './OutfitTagsOverlay';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,17 @@ interface Outfit {
   is_liked: boolean;
   is_saved: boolean;
   created_at: string;
+  outfit_articles?: {
+    x_position: number;
+    y_position: number;
+    articles: {
+      id: string;
+      title: string;
+      price?: number;
+      currency?: string;
+      image_urls?: string[];
+    };
+  }[];
 }
 
 interface OutfitCardProps {
@@ -50,6 +62,9 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
 
   // Get the first image URL from the array
   const imageUrl = outfit.image_urls && outfit.image_urls.length > 0 ? outfit.image_urls[0] : null;
+  
+  // Debug outfit articles  
+
 
   const handleLike = () => {
     onLikeChange(outfit.id, !outfit.is_liked);
@@ -104,16 +119,28 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               </Text>
             </View>
           ) : (
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.outfitImage}
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
-                setImageLoading(false);
-                setImageError(true);
-              }}
-              resizeMode="cover"
-            />
+            <>
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.outfitImage}
+                onLoad={() => setImageLoading(false)}
+                onError={() => {
+                  setImageLoading(false);
+                  setImageError(true);
+                }}
+                resizeMode="cover"
+              />
+              {/* Outfit Tags Overlay */}
+              {!imageLoading && outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
+                <OutfitTagsOverlay 
+                  outfitArticles={outfit.outfit_articles}
+                  showCards={true}
+                  onTagPress={(article) => {
+                    // Handle tag press - could navigate to article details
+                  }}
+                />
+              )}
+            </>
           )}
         </View>
       </TouchableOpacity>
@@ -228,6 +255,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111111',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   outfitImage: {
     width: '100%',
