@@ -88,7 +88,8 @@ export const HomeScreen: React.FC = () => {
                           (filters.colors && filters.colors.length > 0) || 
                           (filters.sizes && filters.sizes.length > 0);
 
-  const handleLikeChange = (articleId: string, isLiked: boolean) => {
+  const handleLikeChange = async (articleId: string, isLiked: boolean) => {
+    // Optimistically update UI
     setArticles(prev =>
       prev.map(article =>
         article.id === articleId
@@ -100,9 +101,29 @@ export const HomeScreen: React.FC = () => {
           : article
       )
     );
+
+    // Make API call
+    const result = await articleService.toggleLike(articleId);
+
+    if (!result.success) {
+      // Revert optimistic update on failure
+      setArticles(prev =>
+        prev.map(article =>
+          article.id === articleId
+            ? {
+                ...article,
+                is_liked: !isLiked,
+                likes_count: article.likes_count + (isLiked ? -1 : 1),
+              }
+            : article
+        )
+      );
+      Alert.alert('Error', result.error || 'Failed to update like');
+    }
   };
 
-  const handleSaveChange = (articleId: string, isSaved: boolean) => {
+  const handleSaveChange = async (articleId: string, isSaved: boolean) => {
+    // Optimistically update UI
     setArticles(prev =>
       prev.map(article =>
         article.id === articleId
@@ -114,6 +135,25 @@ export const HomeScreen: React.FC = () => {
           : article
       )
     );
+
+    // Make API call
+    const result = await articleService.toggleSave(articleId);
+
+    if (!result.success) {
+      // Revert optimistic update on failure
+      setArticles(prev =>
+        prev.map(article =>
+          article.id === articleId
+            ? {
+                ...article,
+                is_saved: !isSaved,
+                saves_count: article.saves_count + (isSaved ? -1 : 1),
+              }
+            : article
+        )
+      );
+      Alert.alert('Error', result.error || 'Failed to update save');
+    }
   };
 
   const handleArticlePress = (article: Article) => {

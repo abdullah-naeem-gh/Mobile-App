@@ -103,6 +103,20 @@ export const articleService = {
           .eq('article_id', articleId);
         
         if (error) throw error;
+
+        // Update likes count by decrementing
+        const { data: currentArticle } = await supabase
+          .from('articles')
+          .select('likes_count')
+          .eq('id', articleId)
+          .single();
+
+        if (currentArticle) {
+          await supabase
+            .from('articles')
+            .update({ likes_count: Math.max(0, (currentArticle.likes_count || 0) - 1) })
+            .eq('id', articleId);
+        }
       } else {
         // Like
         const { error } = await supabase
@@ -113,6 +127,20 @@ export const articleService = {
           });
         
         if (error) throw error;
+
+        // Update likes count by incrementing
+        const { data: currentArticle } = await supabase
+          .from('articles')
+          .select('likes_count')
+          .eq('id', articleId)
+          .single();
+
+        if (currentArticle) {
+          await supabase
+            .from('articles')
+            .update({ likes_count: (currentArticle.likes_count || 0) + 1 })
+            .eq('id', articleId);
+        }
       }
 
       return { success: true };
@@ -150,6 +178,20 @@ export const articleService = {
           .eq('article_id', articleId);
         
         if (error) throw error;
+
+        // Update saves count by decrementing
+        const { data: currentArticle } = await supabase
+          .from('articles')
+          .select('saves_count')
+          .eq('id', articleId)
+          .single();
+
+        if (currentArticle) {
+          await supabase
+            .from('articles')
+            .update({ saves_count: Math.max(0, (currentArticle.saves_count || 0) - 1) })
+            .eq('id', articleId);
+        }
       } else {
         // Save
         const { error } = await supabase
@@ -160,6 +202,20 @@ export const articleService = {
           });
         
         if (error) throw error;
+
+        // Update saves count by incrementing
+        const { data: currentArticle } = await supabase
+          .from('articles')
+          .select('saves_count')
+          .eq('id', articleId)
+          .single();
+
+        if (currentArticle) {
+          await supabase
+            .from('articles')
+            .update({ saves_count: (currentArticle.saves_count || 0) + 1 })
+            .eq('id', articleId);
+        }
       }
 
       return { success: true };

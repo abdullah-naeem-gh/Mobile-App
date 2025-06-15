@@ -41,3 +41,8 @@ package-lock.json
 .env
 assets/inspo/
 database/
+supabase/migrations/check_and_cleanup.sql
+supabase/migrations/create_profiles_table.sql
+supabase/migrations/fix_is_brand_references.sql
+supabase/migrations/profile_helper_functions.sql
+remaining.md
