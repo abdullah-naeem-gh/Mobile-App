@@ -9,6 +9,7 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { Article } from '../types';
 
 const { width } = Dimensions.get('window');
@@ -111,20 +112,24 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       <View style={styles.actionBar}>
         <View style={styles.leftActions}>
           <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, article.is_liked && styles.likedIcon]}>
-              {article.is_liked ? '♥' : '♡'}
-            </Text>
+            <Icon 
+              name={article.is_liked ? "heart" : "heart-outline"} 
+              size={24} 
+              color={article.is_liked ? "#ff3040" : "#ffffff"} 
+            />
           </TouchableOpacity>
           {article.purchase_url && (
             <TouchableOpacity onPress={handleExternalLink} style={styles.actionButton}>
-              <Text style={styles.actionIcon}>↗</Text>
+              <Icon name="open-outline" size={24} color="#ffffff" />
             </TouchableOpacity>
           )}
         </View>
         <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
-          <Text style={[styles.actionIcon, article.is_saved && styles.savedIcon]}>
-            {article.is_saved ? '⬛' : '⬜'}
-          </Text>
+          <Icon 
+            name={article.is_saved ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color="#ffffff" 
+          />
         </TouchableOpacity>
       </View>
 

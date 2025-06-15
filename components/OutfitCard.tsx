@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 
@@ -121,15 +122,19 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
       <View style={styles.actionBar}>
         <View style={styles.leftActions}>
           <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-            <Text style={[styles.actionIcon, outfit.is_liked && styles.likedIcon]}>
-              {outfit.is_liked ? '♥' : '♡'}
-            </Text>
+            <Icon 
+              name={outfit.is_liked ? "heart" : "heart-outline"} 
+              size={24} 
+              color={outfit.is_liked ? "#ff3040" : "#ffffff"} 
+            />
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
-          <Text style={[styles.actionIcon, outfit.is_saved && styles.savedIcon]}>
-            {outfit.is_saved ? '⬛' : '⬜'}
-          </Text>
+          <Icon 
+            name={outfit.is_saved ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color="#ffffff" 
+          />
         </TouchableOpacity>
       </View>
 
