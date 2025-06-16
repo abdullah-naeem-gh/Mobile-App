@@ -155,13 +155,22 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
-          <Icon 
-            name={outfit.is_saved ? "bookmark" : "bookmark-outline"} 
-            size={24} 
-            color="#ffffff" 
-          />
-        </TouchableOpacity>
+        <View style={styles.rightActions}>
+          {outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
+            <TouchableOpacity onPress={() => setShowArticles(!showArticles)} style={styles.showArticlesButton}>
+              <Text style={styles.showArticlesText}>
+                {showArticles ? 'Hide articles' : 'Show articles'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
+            <Icon 
+              name={outfit.is_saved ? "bookmark" : "bookmark-outline"} 
+              size={24} 
+              color="#ffffff" 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Outfit Info */}
@@ -175,27 +184,6 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
         )}
         <Text style={styles.savesCount}>{outfit.saves_count} saves</Text>
       </View>
-
-      {/* Show Articles Button */}
-      {outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
-        <View style={styles.showArticlesContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.showArticlesButton,
-              showArticles && styles.showArticlesButtonActive
-            ]}
-            onPress={() => setShowArticles(!showArticles)}
-          >
-            <Text style={[
-              styles.showArticlesText,
-              showArticles && styles.showArticlesTextActive
-            ]}>
-              {showArticles ? 'Hide Articles' : 'Show Articles'}
-            </Text>
-            <Text style={styles.showArticlesIcon}>👕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 };
@@ -297,6 +285,10 @@ const styles = StyleSheet.create({
   leftActions: {
     flexDirection: 'row',
   },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   actionButton: {
     marginRight: 15,
   },
@@ -346,28 +338,12 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   showArticlesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#222222',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  showArticlesButtonActive: {
-    backgroundColor: '#333333',
-    borderColor: '#555555',
+    marginRight: 15,
   },
   showArticlesText: {
-    color: '#ffffff',
+    color: '#666666',
     fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  showArticlesTextActive: {
-    color: '#ffffff',
+    fontWeight: '500',
   },
   showArticlesIcon: {
     fontSize: 16,
