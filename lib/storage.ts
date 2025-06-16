@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
 
 export type BucketName = 'profile_pics' | 'article_images' | 'outfit_images' | 'wardrobe_images';
 
@@ -129,9 +130,13 @@ export const getSignedUrl = async (
 };
 
 /**
- * Pick image from device gallery
+ * Pick image from device gallery with flexible aspect ratio
  */
-export const pickImage = async (): Promise<ImagePicker.ImagePickerResult | null> => {
+export const pickImage = async (options?: {
+  allowsEditing?: boolean;
+  aspect?: [number, number];
+  quality?: number;
+}): Promise<ImagePicker.ImagePickerResult | null> => {
   try {
     // Request permission
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -141,12 +146,15 @@ export const pickImage = async (): Promise<ImagePicker.ImagePickerResult | null>
       return null;
     }
 
-    // Pick image
+    // Pick image with flexible options
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images", 
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: options?.allowsEditing ?? false, // Don't force cropping by default
+      aspect: options?.aspect, // Allow any aspect ratio by default
+      quality: options?.quality ?? 0.8,
+      exif: false, // Don't include EXIF data to reduce file size
+      allowsMultipleSelection: false,
+      base64: false,
     });
 
     return result;
@@ -157,9 +165,55 @@ export const pickImage = async (): Promise<ImagePicker.ImagePickerResult | null>
 };
 
 /**
+ * Pick image with square cropping (for profile pics, etc.)
+ */
+export const pickSquareImage = async (): Promise<ImagePicker.ImagePickerResult | null> => {
+  return pickImage({
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.8,
+  });
+};
+
+/**
+ * Pick image without any cropping (for articles and outfits)
+ */
+export const pickFullImage = async (): Promise<ImagePicker.ImagePickerResult | null> => {
+  try {
+    // Request permission
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      alert('Permission to access camera roll is required!');
+      return null;
+    }
+
+    // Pick image without any editing or cropping
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false, // Absolutely no editing
+      quality: 0.8,
+      exif: false,
+      allowsMultipleSelection: false,
+      base64: false,
+      // Don't specify aspect ratio to allow any ratio
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Pick full image error:', error);
+    return null;
+  }
+};
+
+/**
  * Take photo with camera
  */
-export const takePhoto = async (): Promise<ImagePicker.ImagePickerResult | null> => {
+export const takePhoto = async (options?: {
+  allowsEditing?: boolean;
+  aspect?: [number, number];
+  quality?: number;
+}): Promise<ImagePicker.ImagePickerResult | null> => {
   try {
     // Request permission
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -171,9 +225,11 @@ export const takePhoto = async (): Promise<ImagePicker.ImagePickerResult | null>
 
     // Take photo
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      allowsEditing: options?.allowsEditing ?? false,
+      aspect: options?.aspect,
+      quality: options?.quality ?? 0.8,
+      exif: false,
+      base64: false,
     });
 
     return result;
@@ -194,6 +250,71 @@ export const getFilePathFromUrl = (url: string, bucket: BucketName): string | nu
     console.error('Error extracting file path:', error);
     return null;
   }
+};
+
+/**
+ * Get image dimensions from URI
+ */
+export const getImageDimensions = (uri: string): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    Image.getSize(
+      uri,
+      (width, height) => {
+        resolve({ width, height });
+      },
+      (error) => {
+        reject(error);
+      }
+    );
+  });
+};
+
+/**
+ * Calculate optimal display dimensions for an image
+ */
+export const calculateOptimalDimensions = (
+  imageWidth: number,
+  imageHeight: number,
+  maxWidth: number,
+  maxHeight: number = 500, // Increased for wider images
+  minHeight: number = 150  // Reduced minimum for wide images
+): { width: number; height: number; aspectRatio: number } => {
+  const aspectRatio = imageWidth / imageHeight;
+  
+  let displayWidth = maxWidth;
+  let displayHeight = displayWidth / aspectRatio;
+  
+  // For very wide images (like 16:9), ensure we don't make them too short
+  if (aspectRatio > 1.5) { // Wide image
+    // For wide images, prioritize showing the full width
+    if (displayHeight < minHeight) {
+      displayHeight = Math.max(minHeight, maxWidth / 3); // At least 1/3 of width
+      displayWidth = displayHeight * aspectRatio;
+      // If width exceeds maxWidth, scale down proportionally
+      if (displayWidth > maxWidth) {
+        displayWidth = maxWidth;
+        displayHeight = displayWidth / aspectRatio;
+      }
+    }
+  } else {
+    // For square or tall images, use original logic
+    if (displayHeight < minHeight) {
+      displayHeight = minHeight;
+      displayWidth = displayHeight * aspectRatio;
+    }
+  }
+  
+  // Ensure maximum height
+  if (displayHeight > maxHeight) {
+    displayHeight = maxHeight;
+    displayWidth = displayHeight * aspectRatio;
+  }
+  
+  return {
+    width: displayWidth,
+    height: displayHeight,
+    aspectRatio,
+  };
 };
 
 /**

@@ -227,8 +227,8 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    aspectRatio: 1,
     position: 'relative',
+    // Remove fixed aspectRatio to allow flexible dimensions
   },
   imageContainer: {
     width: '100%',
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'contain', // Changed from 'cover' to 'contain' to show full image
   },
   tagContainer: {
     position: 'absolute',

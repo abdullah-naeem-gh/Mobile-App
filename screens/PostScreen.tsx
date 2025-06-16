@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { pickImage, uploadImage } from '../lib/storage';
+import { pickFullImage, uploadImage, getImageDimensions, calculateOptimalDimensions, takePhoto, pickImage } from '../lib/storage';
 import { ArticleFilters, articleService } from '../services/articleService';
 import { CategoryType, GenderType } from '../types';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,7 @@ export const PostScreen: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -65,9 +66,79 @@ export const PostScreen: React.FC = () => {
   
   // Handle image selection
   const handleImagePick = async () => {
-    const result = await pickImage();
+    // Show action sheet to choose between camera and gallery
+    Alert.alert(
+      'Select Image',
+      'Choose how you want to add an image',
+      [
+        {
+          text: 'Camera',
+          onPress: handleTakePhoto,
+        },
+        {
+          text: 'Gallery (Full Image)',
+          onPress: handlePickFromGallery,
+        },
+        {
+          text: 'Gallery (Crop)',
+          onPress: handlePickWithCrop,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const handlePickFromGallery = async () => {
+    const result = await pickFullImage(); // No forced cropping at all
     if (!result?.canceled && result?.assets?.[0]?.uri) {
-      setImageUri(result.assets[0].uri);
+      await processSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const result = await takePhoto(); // No forced cropping
+    if (!result?.canceled && result?.assets?.[0]?.uri) {
+      await processSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const handlePickWithCrop = async () => {
+    const result = await pickImage({ allowsEditing: true }); // Allow cropping
+    if (!result?.canceled && result?.assets?.[0]?.uri) {
+      await processSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const processSelectedImage = async (uri: string) => {
+    setImageUri(uri);
+    
+    try {
+      // Get actual image dimensions
+      const dimensions = await getImageDimensions(uri);
+      const screenWidth = 320; // Container width minus padding
+      const optimalDimensions = calculateOptimalDimensions(
+        dimensions.width,
+        dimensions.height,
+        screenWidth,
+        600, // maxHeight - increased for wide images
+        120  // minHeight - reduced for very wide images like 16:9
+      );
+      
+      setImageDimensions(optimalDimensions);
+      console.log('Original image dimensions:', dimensions);
+      console.log('Optimal display dimensions:', optimalDimensions);
+      console.log('Aspect ratio:', optimalDimensions.aspectRatio);
+    } catch (error) {
+      console.error('Failed to get image dimensions:', error);
+      // Fallback to default dimensions
+      setImageDimensions({
+        width: 320,
+        height: 180, // 16:9 fallback
+        aspectRatio: 16/9
+      });
     }
   };
   
@@ -226,6 +297,7 @@ export const PostScreen: React.FC = () => {
       setTitle('');
       setDescription('');
       setImageUri(null);
+      setImageDimensions(null);
       setPrice('');
       setSizes('');
       setColors('');
@@ -298,26 +370,66 @@ export const PostScreen: React.FC = () => {
           {/* Image Upload Section */}
           <View style={[styles.imageSection, postType === 'outfit' && imageUri && styles.outfitImageSection]}>
             {postType === 'outfit' && imageUri ? (
-              <OutfitTagger
-                imageUri={imageUri}
-                tags={outfitTags}
-                onTagPress={handleTagPress}
-                onImagePress={handleImagePress}
-                onTagDelete={handleTagDelete}
-              />
+              <View style={imageDimensions ? { height: imageDimensions.height } : undefined}>
+                <OutfitTagger
+                  imageUri={imageUri}
+                  tags={outfitTags}
+                  onTagPress={handleTagPress}
+                  onImagePress={handleImagePress}
+                  onTagDelete={handleTagDelete}
+                />
+              </View>
             ) : (
               <TouchableOpacity 
-                style={styles.imageUpload} 
+                style={[
+                  styles.imageUpload,
+                  imageDimensions && imageUri ? {
+                    height: imageDimensions.height,
+                    minHeight: imageDimensions.aspectRatio > 1.5 ? 120 : 180, // Smaller min height for wide images
+                    maxHeight: 600, // Increased max height
+                  } : undefined
+                ]}
                 onPress={handleImagePick}
                 disabled={uploading}
               >
                 {imageUri ? (
-                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                  <>
+                    <Image 
+                      source={{ uri: imageUri }} 
+                      style={[
+                        styles.previewImage,
+                        imageDimensions ? {
+                          width: '100%',
+                          height: imageDimensions.height,
+                          aspectRatio: imageDimensions.aspectRatio,
+                        } : undefined
+                      ]}
+                      resizeMode="contain"
+                    />
+                    {imageDimensions && (
+                      <View style={styles.imageInfo}>
+                        <Text style={styles.imageInfoText}>
+                          {Math.round(imageDimensions.aspectRatio * 100) / 100}:1 
+                          {imageDimensions.aspectRatio > 1.7 ? ' (Wide)' : 
+                           imageDimensions.aspectRatio < 0.8 ? ' (Tall)' : ' (Square)'}
+                        </Text>
+                      </View>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.editImageButton}
+                      onPress={handleImagePick}
+                    >
+                      <Ionicons name="pencil" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </>
                 ) : (
                   <View style={styles.placeholder}>
                     <Ionicons name="camera-outline" size={40} color="#666" />
                     <Text style={styles.placeholderText}>
-                      Tap to select image
+                      Tap to add image
+                    </Text>
+                    <Text style={styles.placeholderSubText}>
+                      Camera • Full Image • Crop
                     </Text>
                   </View>
                 )}
@@ -662,7 +774,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   imageUpload: {
-    height: 200,
+    minHeight: 200,
     borderWidth: 1,
     borderColor: '#333333',
     borderRadius: 12,
@@ -670,6 +782,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#111111',
     overflow: 'hidden',
+    position: 'relative',
   },
   placeholder: {
     alignItems: 'center',
@@ -677,11 +790,40 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: '#666666',
     marginTop: 10,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  placeholderSubText: {
+    color: '#999999',
+    marginTop: 4,
+    fontSize: 12,
   },
   previewImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'contain',
+  },
+  imageInfo: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  imageInfoText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  editImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 8,
+    borderRadius: 20,
   },
   inputGroup: {
     marginBottom: 20,
@@ -797,7 +939,6 @@ const styles = StyleSheet.create({
   },
   outfitImageSection: {
     height: undefined, // Remove any fixed height
-    aspectRatio: 1, // Maintain aspect ratio
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#333',
