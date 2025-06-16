@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   listContainer: {
-    paddingTop: 110, // Space for header with better spacing
+    paddingTop: 75, // Just enough space for the header (60 + 12 + some text space)
     paddingBottom: 20,
   },
   emptyContainer: {
