@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { MenuScreen } from './MenuScreen';
 import { SavedScreen } from './SavedScreen';
 import { LikesScreen } from './LikesScreen';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
   View,
   Text,
@@ -507,10 +508,10 @@ export const ProfileScreen: React.FC = () => {
           </Text>
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-              <Text style={styles.headerButtonText}>⚙️</Text>
+              <Icon name="settings-outline" size={24} color="#ffffff" />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleMenuOpen} style={styles.headerButton}>
-              <Text style={styles.headerButtonText}>☰</Text>
+              <Icon name="menu-outline" size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -614,7 +615,7 @@ export const ProfileScreen: React.FC = () => {
               ]}
               onPress={() => handleContentTypeChange('articles')}
             >
-              <Text style={styles.contentTabIcon}>📰</Text>
+              <Icon name="pricetag-outline" size={20} color={selectedContent === 'articles' ? '#ffffff' : '#666666'} />
               <Text style={styles.contentTabCount}>{articles.length}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -624,7 +625,7 @@ export const ProfileScreen: React.FC = () => {
               ]}
               onPress={() => handleContentTypeChange('outfits')}
             >
-              <Text style={styles.contentTabIcon}>👕</Text>
+              <Icon name="shirt-outline" size={20} color={selectedContent === 'outfits' ? '#ffffff' : '#666666'} />
               <Text style={styles.contentTabCount}>{outfits.length}</Text>
             </TouchableOpacity>
           </View>
@@ -659,9 +660,12 @@ export const ProfileScreen: React.FC = () => {
                 />
               ) : (
                 <View style={styles.contentPlaceholder}>
-                  <Text style={styles.placeholderIcon}>
-                    {isBrand ? (selectedContent === 'articles' ? '📰' : '👕') : '👕'}
-                  </Text>
+                  <Icon 
+                    name={isBrand ? (selectedContent === 'articles' ? 'pricetag-outline' : 'shirt-outline') : 'shirt-outline'} 
+                    size={48} 
+                    color="#666666" 
+                    style={styles.placeholderIcon}
+                  />
                   <Text style={styles.placeholderText}>
                     No {isBrand ? selectedContent : 'outfits'} uploaded yet
                   </Text>
@@ -887,7 +891,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ffffff',
   },
   contentTabIcon: {
-    fontSize: 20,
     marginBottom: 2,
   },
   contentTabCount: {
@@ -907,7 +910,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   placeholderIcon: {
-    fontSize: 48,
     marginBottom: 16,
     opacity: 0.6,
   },

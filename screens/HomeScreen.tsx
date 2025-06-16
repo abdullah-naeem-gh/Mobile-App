@@ -12,6 +12,7 @@ import {
   Animated,
   Linking,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
 import { FiltersModal } from '../components/FiltersModal';
@@ -254,7 +255,11 @@ export const HomeScreen: React.FC = () => {
             style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
             onPress={() => setShowFiltersModal(true)}
           >
-            <Text style={[styles.filterIcon, hasActiveFilters && styles.activeFilterIconText]}>⚙</Text>
+            <Icon 
+              name="options-outline" 
+              size={20} 
+              color={hasActiveFilters ? '#000000' : '#ffffff'} 
+            />
           </TouchableOpacity>
         </View>
       </Animated.View>

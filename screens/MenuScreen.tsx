@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -78,7 +79,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('AccountSettings')}
             >
-              <Text style={styles.menuItemIcon}>⚙️</Text>
+              <Icon name="settings-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Account Settings</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -87,7 +88,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Saved')}
             >
-              <Text style={styles.menuItemIcon}>🔖</Text>
+              <Icon name="bookmark-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Saved</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -96,7 +97,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Likes')}
             >
-              <Text style={styles.menuItemIcon}>❤️</Text>
+              <Icon name="heart-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Likes</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -105,7 +106,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Followers')}
             >
-              <Text style={styles.menuItemIcon}>👥</Text>
+              <Icon name="people-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Followers</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -114,7 +115,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Following')}
             >
-              <Text style={styles.menuItemIcon}>👤</Text>
+              <Icon name="person-add-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Following</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -198,9 +199,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#222222',
   },
   menuItemIcon: {
-    fontSize: 20,
     marginRight: 16,
     width: 24,
+    textAlign: 'center',
   },
   menuItemText: {
     flex: 1,
