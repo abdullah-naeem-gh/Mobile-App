@@ -252,5 +252,56 @@ export const articleService = {
         error: error instanceof Error ? error.message : 'Failed to create article' 
       };
     }
-  }
+  },
+
+  /**
+   * Get liked articles for a user
+   */
+  async getLikedArticles(userId: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('likes')
+        .select(`
+          id,
+          created_at,
+          articles!likes_article_id_fkey (
+            id,
+            title,
+            image_urls,
+            price,
+            currency,
+            brands!articles_brand_id_fkey (
+              name
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .not('article_id', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const likedArticles = (data || []).map((like: any) => ({
+        id: like.id,
+        created_at: like.created_at,
+        articles: like.articles ? {
+          id: like.articles.id,
+          title: like.articles.title,
+          image_urls: like.articles.image_urls,
+          price: like.articles.price,
+          currency: like.articles.currency,
+          brands: Array.isArray(like.articles.brands) ? like.articles.brands[0] : like.articles.brands,
+        } : null,
+        outfits: null,
+      }));
+
+      return { success: true, data: likedArticles };
+    } catch (error) {
+      console.error('Error fetching liked articles:', error);
+      return { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch liked articles' 
+      };
+    }
+  },
 };

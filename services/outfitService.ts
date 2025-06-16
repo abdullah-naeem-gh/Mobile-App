@@ -19,6 +19,53 @@ export interface OutfitTag {
 }
 
 class OutfitService {
+  /**
+   * Get liked outfits for a user
+   */
+  async getLikedOutfits(userId: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('likes')
+        .select(`
+          id,
+          created_at,
+          outfits!likes_outfit_id_fkey (
+            id,
+            title,
+            image_url,
+            users!outfits_user_id_fkey (
+              username
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .not('outfit_id', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const likedOutfits = (data || []).map((like: any) => ({
+        id: like.id,
+        created_at: like.created_at,
+        articles: null,
+        outfits: like.outfits ? {
+          id: like.outfits.id,
+          title: like.outfits.title,
+          image_url: like.outfits.image_url,
+          users: Array.isArray(like.outfits.users) ? like.outfits.users[0] : like.outfits.users,
+        } : null,
+      }));
+
+      return { success: true, data: likedOutfits };
+    } catch (error) {
+      console.error('Error fetching liked outfits:', error);
+      return { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch liked outfits' 
+      };
+    }
+  }
+
   // Helper method to determine user type and prepare outfit data
   async prepareOutfitData(
     authUserId: string,

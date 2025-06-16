@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { MenuScreen } from './MenuScreen';
 import { SavedScreen } from './SavedScreen';
+import { LikesScreen } from './LikesScreen';
 import {
   View,
   Text,
@@ -59,6 +60,7 @@ export const ProfileScreen: React.FC = () => {
   const [contentError, setContentError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showSavedScreen, setShowSavedScreen] = useState(false);
+  const [showLikesScreen, setShowLikesScreen] = useState(false);
   // Add state for image loading/errors that will be used by all grid items
   const [imageLoadingStates, setImageLoadingStates] = useState<{[key: string]: boolean}>({});
   const [imageErrorStates, setImageErrorStates] = useState<{[key: string]: boolean}>({});
@@ -328,11 +330,11 @@ export const ProfileScreen: React.FC = () => {
       case 'Saved':
         setShowSavedScreen(true);
         break;
+      case 'Likes':
+        setShowLikesScreen(true);
+        break;
       case 'AccountSettings':
         Alert.alert('Account Settings', 'Account settings functionality will be implemented');
-        break;
-      case 'Likes':
-        Alert.alert('Likes', 'Likes functionality will be implemented');
         break;
       case 'Followers':
         Alert.alert('Followers', 'Followers functionality will be implemented');
@@ -347,6 +349,10 @@ export const ProfileScreen: React.FC = () => {
 
   const handleSavedScreenBack = () => {
     setShowSavedScreen(false);
+  };
+
+  const handleLikesScreenBack = () => {
+    setShowLikesScreen(false);
   };
 
   const isBrand = userRole === 'brand';
@@ -455,6 +461,10 @@ export const ProfileScreen: React.FC = () => {
 
   if (showSavedScreen) {
     return <SavedScreen onBack={handleSavedScreenBack} />;
+  }
+
+  if (showLikesScreen) {
+    return <LikesScreen onBack={handleLikesScreenBack} />;
   }
 
   if (loading) {
