@@ -348,7 +348,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   articleContainer: {
-    marginBottom: 20,
     backgroundColor: '#000000',
   },
   emptyContainer: {

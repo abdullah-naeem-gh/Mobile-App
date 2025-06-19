@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   Dimensions,
   Linking,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Article } from '../types';
+import { getImageDimensions, calculateOptimalDimensions } from '../lib/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -29,9 +31,44 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
+  const imageOpacity = useState(new Animated.Value(0))[0];
 
   // Get the first image URL from the array
   const imageUrl = article.image_urls && article.image_urls.length > 0 ? article.image_urls[0] : null;
+
+  // Load image dimensions when component mounts
+  useEffect(() => {
+    if (imageUrl && !imageLoading) {
+      loadImageDimensions();
+    }
+  }, [imageUrl]);
+
+  const loadImageDimensions = async () => {
+    if (!imageUrl) return;
+    
+    try {
+      const dimensions = await getImageDimensions(imageUrl);
+      const screenWidth = width; // Full screen width
+      const optimalDimensions = calculateOptimalDimensions(
+        dimensions.width,
+        dimensions.height,
+        screenWidth,
+        screenWidth * 1.2, // maxHeight - allow up to 1.2x screen width
+        screenWidth * 0.6   // minHeight - minimum 0.6x screen width
+      );
+      
+      setImageDimensions(optimalDimensions);
+    } catch (error) {
+      console.error('Failed to get image dimensions for article:', article.id, error);
+      // Fallback to a more reasonable default for articles
+      setImageDimensions({
+        width: width,
+        height: width * 0.75, // 4:3 aspect ratio fallback
+        aspectRatio: 4/3
+      });
+    }
+  };
 
   const handleLike = () => {
     onLikeChange(article.id, !article.is_liked);
@@ -81,7 +118,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
       {/* Article Image */}
       <TouchableOpacity onPress={() => onPress(article)} activeOpacity={0.8}>
-        <View style={styles.imageContainer}>
+        <View style={[
+          styles.imageContainer,
+          imageDimensions ? {
+            height: imageDimensions.height,
+          } : { height: width } // Fallback to square
+        ]}>
           {imageLoading && imageUrl && (
             <View style={styles.imageLoadingContainer}>
               <ActivityIndicator size="large" color="#666666" />
@@ -89,21 +131,46 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           )}
           {!imageUrl || imageError ? (
             <View style={styles.imageErrorContainer}>
+              <Icon name="image-outline" size={40} color="#333333" />
               <Text style={styles.imageErrorText}>
                 {!imageUrl ? 'No image available' : 'Failed to load image'}
               </Text>
             </View>
           ) : (
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.articleImage}
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
-                setImageLoading(false);
-                setImageError(true);
-              }}
-              resizeMode="cover"
-            />
+            <Animated.View style={{ opacity: imageOpacity }}>
+              <Image
+                source={{ uri: imageUrl }}
+                style={[
+                  styles.articleImage,
+                  imageDimensions ? {
+                    height: imageDimensions.height,
+                    aspectRatio: imageDimensions.aspectRatio,
+                  } : undefined
+                ]}
+                onLoad={() => {
+                  setImageLoading(false);
+                  Animated.timing(imageOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }).start();
+                }}
+                onError={() => {
+                  setImageLoading(false);
+                  setImageError(true);
+                }}
+                resizeMode="contain"
+              />
+            </Animated.View>
+          )}
+          
+          {/* Aspect ratio indicator */}
+          {imageDimensions && (
+            <View style={styles.aspectRatioIndicator}>
+              <Text style={styles.aspectRatioText}>
+                {Math.round(imageDimensions.aspectRatio * 100) / 100}:1
+              </Text>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -114,7 +181,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
             <Icon 
               name={article.is_liked ? "heart" : "heart-outline"} 
-              size={24} 
+              size={26} 
               color={article.is_liked ? "#ff3040" : "#ffffff"} 
             />
           </TouchableOpacity>
@@ -128,14 +195,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <Icon 
             name={article.is_saved ? "bookmark" : "bookmark-outline"} 
             size={24} 
-            color="#ffffff" 
+            color={article.is_saved ? "#4CAF50" : "#ffffff"} 
           />
         </TouchableOpacity>
       </View>
 
       {/* Article Info */}
       <View style={styles.infoSection}>
-        <Text style={styles.likesCount}>{article.likes_count} likes</Text>
+        <Text style={styles.likesCount}>
+          {article.likes_count.toLocaleString()} {article.likes_count === 1 ? 'like' : 'likes'}
+        </Text>
         <View style={styles.titleRow}>
           <Text style={styles.brandNameInline}>{article.brand?.name}</Text>
           <Text style={styles.articleTitle}> {article.title}</Text>
@@ -147,9 +216,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
         <View style={styles.priceRow}>
           <Text style={styles.price}>
-            {article.currency} {article.price}
+            {article.currency} {article.price?.toLocaleString() || '0'}
           </Text>
-          <Text style={styles.savesCount}>{article.saves_count} saves</Text>
+          <Text style={styles.savesCount}>
+            {article.saves_count.toLocaleString()} {article.saves_count === 1 ? 'save' : 'saves'}
+          </Text>
         </View>
       </View>
     </View>
@@ -159,7 +230,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#000000',
-    marginBottom: 0,
+    marginBottom: 20, // Add space between cards
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#1a1a1a',
+    paddingBottom: 8,
   },
   header: {
     flexDirection: 'row',
@@ -217,10 +291,11 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: width,
-    height: width,
     backgroundColor: '#111111',
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: width * 0.6, // Minimum height for wide images
+    maxHeight: width * 1.2, // Maximum height for tall images
   },
   articleImage: {
     width: '100%',
@@ -232,16 +307,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: '100%',
+    backgroundColor: '#111111',
   },
   imageErrorContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     height: '100%',
+    backgroundColor: '#111111',
   },
   imageErrorText: {
     color: '#666666',
     fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  aspectRatioIndicator: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  aspectRatioText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '500',
   },
   actionBar: {
     flexDirection: 'row',
