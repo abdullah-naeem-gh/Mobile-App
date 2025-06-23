@@ -39,7 +39,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   // Load image dimensions when component mounts
   useEffect(() => {
-    if (imageUrl && !imageLoading) {
+    if (imageUrl) {
       loadImageDimensions();
     }
   }, [imageUrl]);
@@ -137,7 +137,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </Text>
             </View>
           ) : (
-            <Animated.View style={{ opacity: imageOpacity }}>
+            <Animated.View style={{ opacity: imageOpacity, width: '100%', height: '100%' }}>
               <Image
                 source={{ uri: imageUrl }}
                 style={[
@@ -145,7 +145,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   imageDimensions ? {
                     height: imageDimensions.height,
                     aspectRatio: imageDimensions.aspectRatio,
-                  } : undefined
+                  } : { width: '100%', height: '100%' }
                 ]}
                 onLoad={() => {
                   setImageLoading(false);
@@ -156,10 +156,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   }).start();
                 }}
                 onError={() => {
+                  console.log('Image load error for:', imageUrl);
                   setImageLoading(false);
                   setImageError(true);
                 }}
-                resizeMode="contain"
+                resizeMode="cover"
               />
             </Animated.View>
           )}

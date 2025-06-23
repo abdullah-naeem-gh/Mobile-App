@@ -230,14 +230,12 @@ export const HomeScreen: React.FC = () => {
   });
 
   const renderArticle = ({ item }: { item: Article }) => (
-    <View style={styles.articleContainer}>
-      <ArticleCard
-        article={item}
-        onPress={handleArticlePress}
-        onLikeChange={handleLikeChange}
-        onSaveChange={handleSaveChange}
-      />
-    </View>
+    <ArticleCard
+      article={item}
+      onPress={handleArticlePress}
+      onLikeChange={handleLikeChange}
+      onSaveChange={handleSaveChange}
+    />
   );
 
   return (
@@ -346,9 +344,6 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingTop: 75, // Just enough space for the header (60 + 12 + some text space)
     paddingBottom: 20,
-  },
-  articleContainer: {
-    backgroundColor: '#000000',
   },
   emptyContainer: {
     flex: 1,
