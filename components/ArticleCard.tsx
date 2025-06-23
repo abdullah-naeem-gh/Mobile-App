@@ -21,7 +21,6 @@ interface ArticleCardProps {
   onPress: (article: Article) => void;
   onLikeChange: (articleId: string, isLiked: boolean) => void;
   onSaveChange: (articleId: string, isSaved: boolean) => void;
-  onExternalLink?: (article: Article) => void;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -29,7 +28,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onPress,
   onLikeChange,
   onSaveChange,
-  onExternalLink,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -81,9 +79,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const handleExternalLink = () => {
-    if (onExternalLink) {
-      onExternalLink(article);
-    } else if (article.purchase_url) {
+    if (article.purchase_url) {
       Linking.openURL(article.purchase_url).catch(() => {
         console.log('Could not open URL');
       });

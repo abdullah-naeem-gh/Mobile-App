@@ -11,7 +11,6 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
 import { Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -83,13 +82,6 @@ const MainTabs = () => (
   </Tab.Navigator>
 );
 
-const MainStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="MainTabs" component={MainTabs} />
-    <Stack.Screen name="FullScreenArticle" component={FullScreenArticleScreen} />
-  </Stack.Navigator>
-);
-
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' }}>
     <Text style={{ color: '#ffffff' }}>Loading...</Text>
@@ -133,7 +125,7 @@ export const AppNavigator = () => {
   return (
     <NavigationContainer>
       {/* <DebugInfo /> */}
-      {session ? (isNewUser ? <OnboardingStack /> : <MainStack />) : <AuthStack />}
+      {session ? (isNewUser ? <OnboardingStack /> : <MainTabs />) : <AuthStack />}
     </NavigationContainer>
   );
 };

@@ -19,6 +19,7 @@ import { FiltersModal } from '../components/FiltersModal';
 import { Article, CategoryType, GenderType } from '../types';
 import { articleService, ArticleFilters } from '../services/articleService';
 import { useNavigation } from '@react-navigation/native';
+import { preloadImages } from '../lib/imageUtils';
 
 export const HomeScreen: React.FC = () => {
   const { signOut } = useAuth();
@@ -65,6 +66,25 @@ export const HomeScreen: React.FC = () => {
     loadArticles(0, filters, true);
     setPage(0);
   }, [filters]);
+
+  // Add preloading logic for images when articles load
+  useEffect(() => {
+    if (articles.length > 0) {
+      // Preload first few images for better UX
+      const imageUrls = articles
+        .slice(0, 5) // First 5 articles
+        .map(article => article.image_urls?.[0])
+        .filter(Boolean) as string[];
+      
+      // Also preload brand logos
+      const brandLogoUrls = articles
+        .slice(0, 5)
+        .map(article => article.brand?.logo_url)
+        .filter(Boolean) as string[];
+      
+      preloadImages([...imageUrls, ...brandLogoUrls]);
+    }
+  }, [articles]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -248,7 +268,7 @@ export const HomeScreen: React.FC = () => {
       onPress={handleArticlePress}
       onLikeChange={handleLikeChange}
       onSaveChange={handleSaveChange}
-      onExternalLink={handleExternalLink}
+      // onExternalLink={handleExternalLink}
     />
   );
 
