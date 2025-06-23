@@ -11,6 +11,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
 import { Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -31,6 +32,32 @@ const OnboardingStack = () => (
   </Stack.Navigator>
 );
 
+// Create stack navigators for each tab
+const HomeStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="HomeScreen" component={HomeScreen} />
+    <Stack.Screen name="FullScreenArticle" component={FullScreenArticleScreen} />
+  </Stack.Navigator>
+);
+
+const OutfitStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="OutfitFeedScreen" component={OutfitFeedScreen} />
+  </Stack.Navigator>
+);
+
+const PostStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="PostScreen" component={PostScreen} />
+  </Stack.Navigator>
+);
+
+const ProfileStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+  </Stack.Navigator>
+);
+
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={{
@@ -45,7 +72,7 @@ const MainTabs = () => (
   >
     <Tab.Screen 
       name="Articles" 
-      component={HomeScreen}
+      component={HomeStack} // Use HomeStack instead of HomeScreen directly
       options={{
         tabBarIcon: ({ color, size }) => (
           <Icon name="pricetag-outline" size={size} color={color} />
@@ -54,7 +81,7 @@ const MainTabs = () => (
     />
     <Tab.Screen 
       name="Outfits" 
-      component={OutfitFeedScreen}
+      component={OutfitStack} // Use OutfitStack
       options={{
         tabBarIcon: ({ color, size }) => (
           <Icon name="shirt-outline" size={size} color={color} />
@@ -63,7 +90,7 @@ const MainTabs = () => (
     />
     <Tab.Screen 
       name="Post" 
-      component={PostScreen}
+      component={PostStack} // Use PostStack
       options={{
         tabBarIcon: ({ color, size }) => (
           <Icon name="add-circle-outline" size={size} color={color} />
@@ -72,7 +99,7 @@ const MainTabs = () => (
     />
     <Tab.Screen 
       name="Profile" 
-      component={ProfileScreen}
+      component={ProfileStack} // Use ProfileStack
       options={{
         tabBarIcon: ({ color, size }) => (
           <Icon name="person-outline" size={size} color={color} />

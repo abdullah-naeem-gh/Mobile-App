@@ -234,7 +234,7 @@ export const FullScreenArticleScreen: React.FC<any> = ({
         <View style={styles.bottomInfo}>
           <Text style={styles.articleTitle}>{item.title}</Text>
           {item.description && (
-            <Text style={styles.description} numberOfLines={3}>
+            <Text style={styles.description} numberOfLines={2}>
               {item.description}
             </Text>
           )}
@@ -308,6 +308,7 @@ export const FullScreenArticleScreen: React.FC<any> = ({
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         removeClippedSubviews={false}
+        contentInsetAdjustmentBehavior="never" // Prevents safe area from affecting content
       />
     </SafeAreaView>
   );
@@ -334,16 +335,18 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'absolute',
-    top: 0,
+    top: 90,
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: 320, // Increased from 260 to make more room for bottom content
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000000',
   },
   centeredImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#000000',
   },
   subtleGradient: {
     position: 'absolute',
@@ -351,6 +354,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'transparent',
   },
   imageBackground: {
     position: 'absolute',
@@ -394,7 +398,7 @@ const styles = StyleSheet.create({
   },
   topHeader: {
     position: 'absolute',
-    top: 50,
+    top: 20, // Reduced back to minimal top spacing
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -462,7 +466,7 @@ const styles = StyleSheet.create({
   rightActions: {
     position: 'absolute',
     right: 16,
-    bottom: 120,
+    bottom: 300, // Adjusted from 240 to align with new bottom content position
     alignItems: 'center',
     zIndex: 10,
   },
@@ -491,27 +495,27 @@ const styles = StyleSheet.create({
   },
   bottomInfo: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 100, // Changed from 0 to move content up above the tab bar
     left: 0,
     right: 80,
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 80, // Reduced from 120 as we've already moved the entire container up
     zIndex: 10,
   },
   articleTitle: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 4,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   description: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 13, // Reverted back to original
+    lineHeight: 18, // Reverted back to original
+    marginBottom: 8, // Reverted back to original
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -520,11 +524,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6, // Reverted back to original
   },
   price: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 20, // Reverted back to original
     fontWeight: '800',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
@@ -532,7 +536,7 @@ const styles = StyleSheet.create({
   },
   sizes: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
+    fontSize: 12, // Reverted back to original
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -570,7 +574,7 @@ const styles = StyleSheet.create({
   },
   pageIndicator: {
     position: 'absolute',
-    top: 100,
+    top: 80, // Adjusted to align with new header position
     right: 16,
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 8,
