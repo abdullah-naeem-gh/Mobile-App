@@ -18,9 +18,11 @@ import { ArticleCard } from '../components/ArticleCard';
 import { FiltersModal } from '../components/FiltersModal';
 import { Article, CategoryType, GenderType } from '../types';
 import { articleService, ArticleFilters } from '../services/articleService';
+import { useNavigation } from '@react-navigation/native';
 
 export const HomeScreen: React.FC = () => {
   const { signOut } = useAuth();
+  const navigation = useNavigation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -158,6 +160,17 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleArticlePress = (article: Article) => {
+    // Find the index of the clicked article
+    const articleIndex = articles.findIndex(a => a.id === article.id);
+    
+    // Navigate to full-screen view
+    (navigation as any).navigate('FullScreenArticle', {
+      articles,
+      initialIndex: articleIndex,
+    });
+  };
+
+  const handleExternalLink = (article: Article) => {
     if (article.purchase_url) {
       Alert.alert(
         'View Article',
@@ -235,6 +248,7 @@ export const HomeScreen: React.FC = () => {
       onPress={handleArticlePress}
       onLikeChange={handleLikeChange}
       onSaveChange={handleSaveChange}
+      onExternalLink={handleExternalLink}
     />
   );
 
