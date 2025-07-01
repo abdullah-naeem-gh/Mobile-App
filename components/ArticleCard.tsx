@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Article } from '../types';
-import { getImageDimensions, calculateOptimalDimensions } from '../lib/storage';
+import { getImageDimensions, calculateOptimalDimensions } from '../lib/imageUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -34,8 +34,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
   const imageOpacity = useState(new Animated.Value(0))[0];
 
-  // Get the first image URL from the array
-  const imageUrl = article.image_urls && article.image_urls.length > 0 ? article.image_urls[0] : null;
+  // Process image URL with cache busting parameter
+  const imageUrl = useMemo(() => {
+    if (!article.image_urls || article.image_urls.length === 0) return null;
+    
+    const baseUrl = article.image_urls[0];
+    if (!baseUrl) return null;
+    
+    // Add a cache-busting timestamp parameter
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    // Use article ID as part of the cache key for more consistent caching
+    return `${baseUrl}${separator}_imgcache=${article.id.substring(0, 8)}`;
+  }, [article.image_urls, article.id]);
 
   // Load image dimensions when component mounts
   useEffect(() => {
@@ -48,7 +58,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     if (!imageUrl) return;
     
     try {
-      const dimensions = await getImageDimensions(imageUrl);
+      const dimensions = await getImageDimensions(imageUrl, {
+        maxRetries: 3,
+        retryDelay: 1500,
+        timeout: 8000,
+        cacheBuster: true
+      });
       const screenWidth = width; // Full screen width
       const optimalDimensions = calculateOptimalDimensions(
         dimensions.width,

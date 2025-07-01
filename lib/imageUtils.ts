@@ -12,12 +12,21 @@ interface ImageLoadOptions {
   maxRetries?: number;
   retryDelay?: number;
   timeout?: number;
+  cacheBuster?: boolean;
 }
 
 // Cache for image dimensions to avoid repeated requests
 const dimensionCache: {
   [key: string]: ImageDimensions
 } = {};
+
+/**
+ * Add cache busting parameter to URL to avoid stale cache issues
+ */
+const addCacheBuster = (url: string): string => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_cb=${Date.now()}`;
+};
 
 /**
  * Gets image dimensions with retry logic and caching
@@ -30,8 +39,12 @@ export const getImageDimensions = async (
   const maxRetries = options.maxRetries || 3;
   const retryDelay = options.retryDelay || 1000;
   const timeout = options.timeout || 10000;
+  const cacheBuster = options.cacheBuster !== undefined ? options.cacheBuster : true;
 
-  // Check cache first
+  // Apply cache busting if enabled
+  const processedUrl = cacheBuster ? addCacheBuster(imageUrl) : imageUrl;
+  
+  // Check cache first (using original URL for cache key)
   if (dimensionCache[imageUrl]) {
     return dimensionCache[imageUrl];
   }
@@ -53,13 +66,17 @@ export const getImageDimensions = async (
           retries++;
           attemptLoad();
         } else {
-          reject(new Error(`Timeout getting image dimensions after ${maxRetries} attempts`));
+          // Fallback to default dimensions on final failure
+          const fallbackDimensions = getDefaultImageDimensions(imageUrl);
+          dimensionCache[imageUrl] = fallbackDimensions;
+          console.log(`Using fallback dimensions for ${imageUrl}:`, fallbackDimensions);
+          resolve(fallbackDimensions);
         }
       }, timeout) as unknown as number; // Cast to number as React Native/JS uses number for timeouts
       
       // Attempt to get image size
       Image.getSize(
-        imageUrl,
+        processedUrl,
         (width, height) => {
           clearTimeout(timeoutId);
           const aspectRatio = width / height;
@@ -75,10 +92,15 @@ export const getImageDimensions = async (
           if (retries < maxRetries) {
             console.log(`Failed to get image dimensions, retrying (${retries + 1}/${maxRetries})...`);
             retries++;
-            // Wait before retrying
-            setTimeout(attemptLoad, retryDelay);
+            // Wait before retrying with longer delays for subsequent retries
+            setTimeout(attemptLoad, retryDelay * (retries * 0.5 + 1));
           } else {
-            reject(error);
+            console.error('Failed to get image dimensions after all retries:', error);
+            // Fallback to default dimensions
+            const fallbackDimensions = getDefaultImageDimensions(imageUrl);
+            dimensionCache[imageUrl] = fallbackDimensions;
+            console.log(`Using fallback dimensions for ${imageUrl}:`, fallbackDimensions);
+            resolve(fallbackDimensions);
           }
         }
       );
@@ -87,6 +109,32 @@ export const getImageDimensions = async (
     // Start loading
     attemptLoad();
   });
+};
+
+/**
+ * Get default dimensions based on image path/URL
+ * This provides reasonable fallbacks when image loading fails
+ */
+const getDefaultImageDimensions = (imagePath: string): ImageDimensions => {
+  const lowerPath = imagePath.toLowerCase();
+  
+  // Try to guess aspect ratio based on filename patterns or categories
+  if (lowerPath.includes('_square') || lowerPath.includes('profile')) {
+    // Square images (1:1)
+    return { width: 600, height: 600, aspectRatio: 1 };
+  } else if (lowerPath.includes('_banner') || lowerPath.includes('landscape')) {
+    // Landscape/Banner images (16:9)
+    return { width: 800, height: 450, aspectRatio: 16/9 };
+  } else if (lowerPath.includes('product') || lowerPath.includes('article')) {
+    // Product images typically 3:4 or 4:5 (portrait)
+    return { width: 600, height: 800, aspectRatio: 3/4 };
+  } else if (lowerPath.includes('outfit')) {
+    // Outfit images often 4:5
+    return { width: 600, height: 750, aspectRatio: 4/5 };
+  } else {
+    // General default - slightly portrait-oriented
+    return { width: 600, height: 700, aspectRatio: 6/7 };
+  }
 };
 
 /**
@@ -158,9 +206,21 @@ export const preloadImages = (urls: string[]) => {
   urls.forEach(url => {
     if (!url) return;
     
+    // Add cache buster to URL for preloading
+    const processedUrl = addCacheBuster(url);
+    
     // Just trigger Image.prefetch without waiting
-    Image.prefetch(url).catch(() => {
+    Image.prefetch(processedUrl).catch(() => {
       // Silently fail - this is just preloading
     });
   });
+};
+
+/**
+ * Clear image dimension cache
+ */
+export const clearImageCache = () => {
+  for (const key in dimensionCache) {
+    delete dimensionCache[key];
+  }
 };
