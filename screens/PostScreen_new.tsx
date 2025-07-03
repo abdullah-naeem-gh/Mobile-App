@@ -416,12 +416,10 @@ export const PostScreen: React.FC = () => {
                         </TouchableOpacity>
                       </>
                     ) : (
-                      <View style={styles.imagePlaceholder}>
-                        <View style={styles.placeholderIconContainer}>
-                          <Icon name="camera" size={32} color="#E8D5C4" />
-                        </View>
-                        <Text style={styles.placeholderTitle}>Add Image</Text>
-                        <Text style={styles.placeholderSubtitle}>Tap to select from gallery or take a photo</Text>
+                      <View style={styles.placeholder}>
+                        <Icon name="camera" size={40} color="#666666" />
+                        <Text style={styles.placeholderText}>Add Image</Text>
+                        <Text style={styles.placeholderSubText}>Tap to select from gallery or camera</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -828,36 +826,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     textAlign: 'center',
-  },
-  imagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  placeholderIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#E8D5C4',
-    borderStyle: 'dashed',
-  },
-  placeholderTitle: {
-    color: '#000000',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  placeholderSubtitle: {
-    color: '#666666',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 20,
   },
   inputGroup: {
     marginBottom: 16,
