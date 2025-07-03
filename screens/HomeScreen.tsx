@@ -279,17 +279,6 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleArticlePress = (article: Article) => {
-    // Find the index of the clicked article
-    const articleIndex = articles.findIndex(a => a.id === article.id);
-    
-    // Navigate to full-screen view
-    (navigation as any).navigate('FullScreenArticle', {
-      articles,
-      initialIndex: articleIndex,
-    });
-  };
-
   const handleExternalLink = (article: Article) => {
     if (article.purchase_url) {
       Alert.alert(
@@ -319,10 +308,8 @@ export const HomeScreen: React.FC = () => {
   const renderArticle = ({ item }: { item: Article }) => (
     <ArticleCard
       article={item}
-      onPress={handleArticlePress}
       onLikeChange={handleLikeChange}
       onSaveChange={handleSaveChange}
-      // onExternalLink={handleExternalLink}
     />
   );
 

@@ -33,14 +33,12 @@ const imageContainerHeight = cardHeight * 0.75;
 
 interface ArticleCardProps {
   article: Article;
-  onPress: (article: Article) => void;
   onLikeChange: (articleId: string, isLiked: boolean) => void;
   onSaveChange: (articleId: string, isSaved: boolean) => void;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
   article,
-  onPress,
   onLikeChange,
   onSaveChange,
 }) => {
@@ -143,8 +141,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     <View style={styles.container}>
       <View style={styles.cardContent}>
         {/* Article Image with overlay info */}
-        <TouchableOpacity onPress={() => onPress(article)} activeOpacity={0.8}>
-          <View style={styles.imageContainer}>
+        <View style={styles.imageContainer}>
             {/* Close button */}
             <TouchableOpacity style={styles.closeButton}>
               <Icon name="close" size={20} color="#000000" />
@@ -215,7 +212,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <Text style={styles.brandNameOverlay}>{article.brand?.name || 'Unknown Brand'}</Text>
             </LinearGradient>
           </View>
-        </TouchableOpacity>
 
         {/* Bottom section */}
         <View style={styles.bottomSection}>
