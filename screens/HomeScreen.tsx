@@ -12,6 +12,7 @@ import {
   Animated,
   Linking,
   Dimensions,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -232,7 +233,11 @@ export const HomeScreen: React.FC = () => {
       
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Text style={styles.title}>KAPRAYY</Text>
+          <Image 
+            source={require('../assets/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <View style={styles.headerIcons}>
             <TouchableOpacity 
               style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
@@ -316,6 +321,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     letterSpacing: -0.5,
+  },
+  logo: {
+    width: width * 0.55, // Responsive width (roughly 220px on most phones)
+    height: width * 0.18, // Responsive height (roughly 72px on most phones)
+    maxWidth: 220,
+    maxHeight: 72,
   },
   headerIcons: {
     flexDirection: 'row',

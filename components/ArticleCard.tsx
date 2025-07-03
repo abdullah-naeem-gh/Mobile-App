@@ -18,13 +18,13 @@ import { getImageDimensions, calculateOptimalDimensions } from '../lib/imageUtil
 const { width, height } = Dimensions.get('window');
 
 // Fixed design dimensions - maintain exact aspect ratio
-const DESIGN_WIDTH = 346;
-const DESIGN_HEIGHT = 588;
+const DESIGN_WIDTH = 420; // Increased from 346
+const DESIGN_HEIGHT = 760; // Increased from 588
 const DESIGN_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT;
 
 // Calculate responsive card dimensions while maintaining design proportions
-const availableWidth = width * 0.85; // Use 85% of screen width with padding
-const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, 1); // Don't scale up beyond design size
+const availableWidth = width * 0.85; // Increased from 85% to 95% of screen width
+const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, 1.2); // Allow scaling up to 1.2x beyond design size
 const cardWidth = DESIGN_WIDTH * scaleFactor;
 const cardHeight = DESIGN_HEIGHT * scaleFactor;
 
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     width: width,
     height: height, // Full screen height for reel effect
-    paddingHorizontal: 20,
+    paddingHorizontal: 10, // Reduced padding to accommodate larger cards
     paddingVertical: 0,
     justifyContent: 'flex-start',
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     width: cardWidth, // Responsive width
     height: cardHeight, // Responsive height maintaining aspect ratio
     alignSelf: 'center',
-    marginTop: 120, // Position closer to header
+    marginTop: 100, // Adjusted position for larger cards
     marginBottom: 20,
   },
   imageContainer: {
