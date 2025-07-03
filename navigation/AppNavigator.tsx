@@ -63,46 +63,55 @@ const MainTabs = () => (
     screenOptions={{
       headerShown: false,
       tabBarStyle: {
-        backgroundColor: '#000000',
-        borderTopColor: '#333333',
+        backgroundColor: '#ffffff',
+        borderTopColor: '#e0e0e0',
+        borderTopWidth: 1,
+        paddingTop: 8,
+        paddingBottom: 8,
+        height: 80,
       },
-      tabBarActiveTintColor: '#ffffff',
-      tabBarInactiveTintColor: '#666666',
+      tabBarActiveTintColor: '#000000',
+      tabBarInactiveTintColor: '#9e9e9e',
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: '500',
+        marginTop: 4,
+      },
     }}
   >
     <Tab.Screen 
       name="Articles" 
-      component={HomeStack} // Use HomeStack instead of HomeScreen directly
+      component={HomeStack}
       options={{
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="pricetag-outline" size={size} color={color} />
+        tabBarIcon: ({ color, size, focused }) => (
+          <Icon name={focused ? "pricetag" : "pricetag-outline"} size={24} color={color} />
         ),
       }}
     />
     <Tab.Screen 
       name="Outfits" 
-      component={OutfitStack} // Use OutfitStack
+      component={OutfitStack}
       options={{
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="shirt-outline" size={size} color={color} />
+        tabBarIcon: ({ color, size, focused }) => (
+          <Icon name={focused ? "shirt" : "shirt-outline"} size={24} color={color} />
         ),
       }}
     />
     <Tab.Screen 
       name="Post" 
-      component={PostStack} // Use PostStack
+      component={PostStack}
       options={{
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="add-circle-outline" size={size} color={color} />
+        tabBarIcon: ({ color, size, focused }) => (
+          <Icon name={focused ? "add-circle" : "add-circle-outline"} size={24} color={color} />
         ),
       }}
     />
     <Tab.Screen 
       name="Profile" 
-      component={ProfileStack} // Use ProfileStack
+      component={ProfileStack}
       options={{
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="person-outline" size={size} color={color} />
+        tabBarIcon: ({ color, size, focused }) => (
+          <Icon name={focused ? "person" : "person-outline"} size={24} color={color} />
         ),
       }}
     />
@@ -110,8 +119,8 @@ const MainTabs = () => (
 );
 
 const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' }}>
-    <Text style={{ color: '#ffffff' }}>Loading...</Text>
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
+    <Text style={{ color: '#000000' }}>Loading...</Text>
   </View>
 );
 

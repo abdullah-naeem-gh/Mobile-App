@@ -11,6 +11,7 @@ import {
   Alert,
   Animated,
   Linking,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +21,8 @@ import { Article, CategoryType, GenderType } from '../types';
 import { articleService, ArticleFilters } from '../services/articleService';
 import { useNavigation } from '@react-navigation/native';
 import { preloadImages } from '../lib/imageUtils';
+
+const { width, height } = Dimensions.get('window');
 
 export const HomeScreen: React.FC = () => {
   const { signOut } = useAuth();
@@ -31,10 +34,6 @@ export const HomeScreen: React.FC = () => {
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
-  const lastScrollY = useRef(0);
-  const isScrollingDown = useRef(false);
 
   const loadArticles = useCallback(async (
     currentPage: number = 0, 
@@ -216,52 +215,6 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { 
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const currentOffset = event.nativeEvent.contentOffset.y;
-        const diff = currentOffset - lastScrollY.current;
-        
-        if (Math.abs(diff) > 5) { // Only animate if scroll difference is significant
-          if (currentOffset <= 0) {
-            // At the top, always show header
-            Animated.timing(headerTranslateY, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: false,
-            }).start();
-          } else if (diff > 0 && !isScrollingDown.current) {
-            // Scrolling down, hide header
-            isScrollingDown.current = true;
-            Animated.timing(headerTranslateY, {
-              toValue: -100,
-              duration: 200,
-              useNativeDriver: false,
-            }).start();
-          } else if (diff < 0 && isScrollingDown.current) {
-            // Scrolling up, show header
-            isScrollingDown.current = false;
-            Animated.timing(headerTranslateY, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: false,
-            }).start();
-          }
-          
-          lastScrollY.current = currentOffset;
-        }
-      }
-    }
-  );
-
-  const headerOpacity = headerTranslateY.interpolate({
-    inputRange: [-100, 0],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
   const renderArticle = ({ item }: { item: Article }) => (
     <ArticleCard
       article={item}
@@ -273,66 +226,76 @@ export const HomeScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View style={[
-        styles.header, 
-        { 
-          opacity: headerOpacity,
-          transform: [{ translateY: headerTranslateY }]
-        }
-      ]}>
-        <Text style={styles.title}>Kaprayy</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity 
-            style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
-            onPress={() => setShowFiltersModal(true)}
-          >
-            <Icon 
-              name="options-outline" 
-              size={20} 
-              color={hasActiveFilters ? '#000000' : '#ffffff'} 
-            />
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-
-
-      <FlatList
-        data={articles}
-        renderItem={renderArticle}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No articles found</Text>
-            <Text style={styles.emptySubText}>Try adjusting your filters</Text>
-          </View>
-        }
-      />
+    <View style={styles.container}>
+      {/* Beige background rectangle */}
+      <View style={styles.beigeBackground} />
       
-      <FiltersModal
-        visible={showFiltersModal}
-        onClose={() => setShowFiltersModal(false)}
-        onApplyFilters={handleApplyFilters}
-        currentFilters={filters}
-      />
-    </SafeAreaView>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <Text style={styles.title}>KAPRAYY</Text>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity 
+              style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
+              onPress={() => setShowFiltersModal(true)}
+            >
+              <Icon 
+                name="options-outline" 
+                size={20} 
+                color={hasActiveFilters ? '#ffffff' : '#000000'} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <FlatList
+          data={articles}
+          renderItem={renderArticle}
+          keyExtractor={(item) => item.id}
+          pagingEnabled={true}
+          showsVerticalScrollIndicator={false}
+          snapToInterval={height}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          contentContainerStyle={styles.listContainer}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.1}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No articles found</Text>
+              <Text style={styles.emptySubText}>Try adjusting your filters</Text>
+            </View>
+          }
+        />
+        
+        <FiltersModal
+          visible={showFiltersModal}
+          onClose={() => setShowFiltersModal(false)}
+          onApplyFilters={handleApplyFilters}
+          currentFilters={filters}
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
+  },
+  beigeBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 661,
+    backgroundColor: '#E8D5C4',
+    borderBottomLeftRadius: 43,
+    borderBottomRightRadius: 43,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     position: 'absolute',
@@ -344,16 +307,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: 60, // Account for SafeAreaView
+    paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#000000',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#333333',
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000',
     letterSpacing: -0.5,
   },
   headerIcons: {
@@ -363,31 +324,31 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 8,
     marginRight: 10,
+    borderRadius: 16,
   },
   filterIcon: {
     fontSize: 20,
-    color: '#ffffff',
+    color: '#000000',
   },
   activeFilterIcon: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     borderRadius: 16,
   },
   activeFilterIconText: {
-    color: '#000000',
+    color: '#ffffff',
   },
   listContainer: {
-    paddingTop: 75, // Just enough space for the header (60 + 12 + some text space)
-    paddingBottom: 20,
+    flexGrow: 1,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    height: height,
   },
   emptyText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#000000',
     marginBottom: 8,
   },
   emptySubText: {

@@ -10,11 +10,26 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Article } from '../types';
 import { getImageDimensions, calculateOptimalDimensions } from '../lib/imageUtils';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Fixed design dimensions - maintain exact aspect ratio
+const DESIGN_WIDTH = 346;
+const DESIGN_HEIGHT = 588;
+const DESIGN_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT;
+
+// Calculate responsive card dimensions while maintaining design proportions
+const availableWidth = width * 0.85; // Use 85% of screen width with padding
+const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, 1); // Don't scale up beyond design size
+const cardWidth = DESIGN_WIDTH * scaleFactor;
+const cardHeight = DESIGN_HEIGHT * scaleFactor;
+
+// Image container takes most of the card height (about 75% like in design)
+const imageContainerHeight = cardHeight * 0.75;
 
 interface ArticleCardProps {
   article: Article;
@@ -32,6 +47,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
+  const [isArticleNameExpanded, setIsArticleNameExpanded] = useState(false);
   const imageOpacity = useState(new Animated.Value(0))[0];
 
   // Process image URL with cache busting parameter
@@ -53,6 +69,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       loadImageDimensions();
     }
   }, [imageUrl]);
+
+  // Determine the best resize mode based on image dimensions
+  const getResizeMode = (): 'cover' | 'contain' => {
+    if (!imageDimensions) return 'contain';
+    
+    const imageAspectRatio = imageDimensions.aspectRatio;
+    const containerAspectRatio = DESIGN_ASPECT_RATIO;
+    
+    // If image aspect ratio is close to container aspect ratio, use cover
+    // Otherwise use contain for Instagram-like centering
+    const aspectRatioDifference = Math.abs(imageAspectRatio - containerAspectRatio);
+    
+    return aspectRatioDifference < 0.3 ? 'cover' : 'contain';
+  };
 
   const loadImageDimensions = async () => {
     if (!imageUrl) return;
@@ -101,142 +131,126 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
+  const handleArticleNamePress = () => {
+    setIsArticleNameExpanded(!isArticleNameExpanded);
+  };
+
+  const formatPrice = () => {
+    return `${article.currency} ${article.price?.toLocaleString() || '0'}`;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Brand Header */}
-      <View style={styles.header}>
-        <View style={styles.brandInfo}>
-          <View style={styles.brandImageContainer}>
-            {article.brand?.logo_url ? (
-              <Image
-                source={{ uri: article.brand.logo_url }}
-                style={styles.brandImage}
-                onError={() => {}}
+      <View style={styles.cardContent}>
+        {/* Article Image with overlay info */}
+        <TouchableOpacity onPress={() => onPress(article)} activeOpacity={0.8}>
+          <View style={styles.imageContainer}>
+            {/* Close button */}
+            <TouchableOpacity style={styles.closeButton}>
+              <Icon name="close" size={20} color="#000000" />
+            </TouchableOpacity>
+            
+            {/* Like button */}
+            <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+              <Icon 
+                name={article.is_liked ? "heart" : "heart-outline"} 
+                size={24} 
+                color={article.is_liked ? "#ff3040" : "#000000"} 
               />
-            ) : (
-              <View style={styles.brandImagePlaceholder}>
-                <Text style={styles.brandInitial}>
-                  {article.brand?.name?.charAt(0)?.toUpperCase() || 'B'}
-                </Text>
+              <Text style={styles.likeCount}>{article.likes_count}</Text>
+            </TouchableOpacity>
+
+            {imageLoading && imageUrl && (
+              <View style={styles.imageLoadingContainer}>
+                <ActivityIndicator size="large" color="#666666" />
               </View>
             )}
-          </View>
-          <View style={styles.brandDetails}>
-            <Text style={styles.brandName}>{article.brand?.name || 'Unknown Brand'}</Text>
-            <Text style={styles.articleCategory}>{article.category}</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Text style={styles.moreIcon}>⋯</Text>
-        </TouchableOpacity>
-      </View>
+            {!imageUrl || imageError ? (
+              <View style={styles.imageErrorContainer}>
+                <Icon name="image-outline" size={40} color="#333333" />
+                <Text style={styles.imageErrorText}>
+                  {!imageUrl ? 'No image available' : 'Failed to load image'}
+                </Text>
+              </View>
+            ) : (
+              <Animated.View style={{ opacity: imageOpacity, width: '100%', height: '100%' }}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.articleImage}
+                  onLoad={() => {
+                    setImageLoading(false);
+                    Animated.timing(imageOpacity, {
+                      toValue: 1,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
+                  onError={() => {
+                    console.log('Image load error for:', imageUrl);
+                    setImageLoading(false);
+                    setImageError(true);
+                  }}
+                  resizeMode={getResizeMode()} // Dynamic resize mode based on image dimensions
+                />
+              </Animated.View>
+            )}
 
-      {/* Article Image */}
-      <TouchableOpacity onPress={() => onPress(article)} activeOpacity={0.8}>
-        <View style={[
-          styles.imageContainer,
-          imageDimensions ? {
-            height: imageDimensions.height,
-          } : { height: width } // Fallback to square
-        ]}>
-          {imageLoading && imageUrl && (
-            <View style={styles.imageLoadingContainer}>
-              <ActivityIndicator size="large" color="#666666" />
-            </View>
-          )}
-          {!imageUrl || imageError ? (
-            <View style={styles.imageErrorContainer}>
-              <Icon name="image-outline" size={40} color="#333333" />
-              <Text style={styles.imageErrorText}>
-                {!imageUrl ? 'No image available' : 'Failed to load image'}
-              </Text>
-            </View>
-          ) : (
-            <Animated.View style={{ opacity: imageOpacity, width: '100%', height: '100%' }}>
-              <Image
-                source={{ uri: imageUrl }}
-                style={[
-                  styles.articleImage,
-                  imageDimensions ? {
-                    height: imageDimensions.height,
-                    aspectRatio: imageDimensions.aspectRatio,
-                  } : { width: '100%', height: '100%' }
-                ]}
-                onLoad={() => {
-                  setImageLoading(false);
-                  Animated.timing(imageOpacity, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                  }).start();
-                }}
-                onError={() => {
-                  console.log('Image load error for:', imageUrl);
-                  setImageLoading(false);
-                  setImageError(true);
-                }}
-                resizeMode="cover"
+            {/* Overlay with article info */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']} // Strong blur effect: 80% to 30% to 0%
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.overlayInfo}
+            >
+              <TouchableOpacity onPress={handleArticleNamePress} activeOpacity={0.7} style={styles.articleTitleRow}>
+                <Text 
+                  style={[styles.articleName, { flex: 1, marginRight: 8 }]} 
+                  numberOfLines={isArticleNameExpanded ? undefined : 1}
+                  ellipsizeMode={isArticleNameExpanded ? undefined : 'tail'}
+                >
+                  {article.title}
+                </Text>
+                <Text style={styles.priceOverlay}>{formatPrice()}</Text>
+              </TouchableOpacity>
+              <Text style={styles.brandNameOverlay}>{article.brand?.name || 'Unknown Brand'}</Text>
+            </LinearGradient>
+          </View>
+        </TouchableOpacity>
+
+        {/* Bottom section */}
+        <View style={styles.bottomSection}>
+          <View style={styles.categoryRow}>
+            <Text style={styles.categoryText}>{article.category}</Text>
+            <TouchableOpacity onPress={handleSave}>
+              <Icon 
+                name={article.is_saved ? "bookmark" : "bookmark-outline"} 
+                size={20} 
+                color="#000000" 
               />
-            </Animated.View>
-          )}
-          
-          {/* Aspect ratio indicator */}
-          {imageDimensions && (
-            <View style={styles.aspectRatioIndicator}>
-              <Text style={styles.aspectRatioText}>
-                {Math.round(imageDimensions.aspectRatio * 100) / 100}:1
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-      {/* Action Buttons */}
-      <View style={styles.actionBar}>
-        <View style={styles.leftActions}>
-          <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-            <Icon 
-              name={article.is_liked ? "heart" : "heart-outline"} 
-              size={26} 
-              color={article.is_liked ? "#ff3040" : "#ffffff"} 
-            />
-          </TouchableOpacity>
-          {article.purchase_url && (
-            <TouchableOpacity onPress={handleExternalLink} style={styles.actionButton}>
-              <Icon name="open-outline" size={24} color="#ffffff" />
             </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity onPress={handleSave} style={styles.actionButton}>
-          <Icon 
-            name={article.is_saved ? "bookmark" : "bookmark-outline"} 
-            size={24} 
-            color={article.is_saved ? "#4CAF50" : "#ffffff"} 
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Article Info */}
-      <View style={styles.infoSection}>
-        <Text style={styles.likesCount}>
-          {article.likes_count.toLocaleString()} {article.likes_count === 1 ? 'like' : 'likes'}
-        </Text>
-        <View style={styles.titleRow}>
-          <Text style={styles.brandNameInline}>{article.brand?.name}</Text>
-          <Text style={styles.articleTitle}> {article.title}</Text>
-        </View>
-        {article.description && (
+          </View>
+          
           <Text style={styles.description} numberOfLines={2}>
-            {article.description}
+            {article.description || 'No description available...'}
           </Text>
-        )}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {article.currency} {article.price?.toLocaleString() || '0'}
-          </Text>
-          <Text style={styles.savesCount}>
-            {article.saves_count.toLocaleString()} {article.saves_count === 1 ? 'save' : 'saves'}
-          </Text>
+          
+          <View style={styles.tagsRow}>
+            <View style={styles.tagsContainer}>
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{article.category}</Text>
+              </View>
+              {article.brand?.name && (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{article.brand.name}</Text>
+                </View>
+              )}
+            </View>
+            
+            <TouchableOpacity style={styles.visitButton} onPress={handleExternalLink}>
+              <Text style={styles.visitButtonText}>Visit</Text>
+              <Icon name="arrow-forward" size={14} color="#000000" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -245,77 +259,68 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000000',
-    marginBottom: 20, // Add space between cards
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#1a1a1a',
-    paddingBottom: 8,
+    backgroundColor: 'transparent',
+    width: width,
+    height: height, // Full screen height for reel effect
+    paddingHorizontal: 20,
+    paddingVertical: 0,
+    justifyContent: 'flex-start',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-  },
-  brandInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandImageContainer: {
-    marginRight: 12,
-  },
-  brandImage: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: '#333333',
-  },
-  brandImagePlaceholder: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: '#333333',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  brandInitial: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  brandDetails: {
-    flex: 1,
-  },
-  brandName: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  articleCategory: {
-    color: '#666666',
-    fontSize: 12,
-    textTransform: 'capitalize',
-  },
-  moreButton: {
-    padding: 8,
-  },
-  moreIcon: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  cardContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 10, // Spread effect
+    },
+    shadowOpacity: 0.4, // Increased opacity for better visibility
+    shadowRadius: 21, // Blur effect
+    elevation: 20, // Higher elevation for Android
+    width: cardWidth, // Responsive width
+    height: cardHeight, // Responsive height maintaining aspect ratio
+    alignSelf: 'center',
+    marginTop: 120, // Position closer to header
+    marginBottom: 20,
   },
   imageContainer: {
-    width: width,
-    backgroundColor: '#111111',
+    position: 'relative',
+    width: '100%',
+    height: cardHeight * 0.75, // Image takes 75% of card height
+    backgroundColor: '#ffffff', // White background like Instagram
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    width: 32,
+    height: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: width * 0.6, // Minimum height for wide images
-    maxHeight: width * 1.2, // Maximum height for tall images
+    zIndex: 10,
+  },
+  likeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  likeCount: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
   articleImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#ffffff', // White background for centering small images
   },
   imageLoadingContainer: {
     position: 'absolute',
@@ -323,14 +328,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: '#111111',
+    backgroundColor: '#ffffff',
   },
   imageErrorContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: '#111111',
+    backgroundColor: '#ffffff',
   },
   imageErrorText: {
     color: '#666666',
@@ -338,87 +343,89 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  aspectRatioIndicator: {
+  overlayInfo: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
   },
-  aspectRatioText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '500',
-  },
-  actionBar: {
+  articleTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 12,
-  },
-  leftActions: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    marginRight: 15,
-  },
-  actionIcon: {
-    fontSize: 24,
-    color: '#ffffff',
-  },
-  likedIcon: {
-    color: '#ff3040',
-  },
-  savedIcon: {
-    color: '#ffffff',
-  },
-  infoSection: {
-    paddingHorizontal: 15,
-    paddingBottom: 12,
-  },
-  likesCount: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 6,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  brandNameInline: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  articleTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    flex: 1,
-  },
-  description: {
-    color: '#ffffff',
-    fontSize: 14,
-    lineHeight: 18,
-    marginBottom: 6,
-  },
-  priceRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
+    marginBottom: 2,
   },
-  price: {
+  priceOverlay: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
-  savesCount: {
+  articleName: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  brandNameOverlay: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  bottomSection: {
+    padding: 16,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  description: {
     color: '#666666',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  tag: {
+    backgroundColor: '#E8D5C4',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  tagText: {
+    color: '#000000',
     fontSize: 12,
+    fontWeight: '500',
+  },
+  visitButton: {
+    backgroundColor: '#E8A853',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+  visitButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 4,
   },
 });
