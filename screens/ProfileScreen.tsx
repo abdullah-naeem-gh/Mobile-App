@@ -20,7 +20,7 @@ import {
   RefreshControl,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface BrandProfile {
   id: string;
@@ -424,7 +424,7 @@ export const ProfileScreen: React.FC = () => {
           </>
         ) : (
           <View style={styles.gridImagePlaceholder}>
-            <Text style={styles.gridImagePlaceholderText}>No Image</Text>
+            <Icon name="image-outline" size={24} color="#666666" />
           </View>
         )}
         {isArticle && item.price && !isImageLoading && (
@@ -470,225 +470,274 @@ export const ProfileScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <View style={styles.beigeBackground} />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000000" />
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   if (!profile) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load profile</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <View style={styles.beigeBackground} />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.errorContainer}>
+            <Icon name="person-outline" size={48} color="#666666" />
+            <Text style={styles.errorText}>Failed to load profile</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="#ffffff"
-            colors={["#ffffff"]}
-          />
-        }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.username}>
-            {isBrand ? (profile as BrandProfile).name : (profile as UserProfile).username}
-          </Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-              <Icon name="settings-outline" size={24} color="#ffffff" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleMenuOpen} style={styles.headerButton}>
-              <Icon name="menu-outline" size={24} color="#ffffff" />
-            </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Static beige background */}
+      <View style={styles.beigeBackground} />
+      
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#000000"
+              colors={["#000000"]}
+            />
+          }
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
+                <Icon name="settings-outline" size={24} color="#000000" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleMenuOpen} style={styles.headerButton}>
+                <Icon name="menu-outline" size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* Profile Info */}
-        <View style={styles.profileSection}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              {(isBrand ? (profile as BrandProfile).logo_url : (profile as UserProfile).profile_image_url) ? (
-                <Image
-                  source={{ 
-                    uri: isBrand 
-                      ? (profile as BrandProfile).logo_url 
-                      : (profile as UserProfile).profile_image_url 
-                  }}
-                  style={styles.avatar}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>
-                    {isBrand 
-                      ? (profile as BrandProfile).name.charAt(0).toUpperCase()
-                      : (profile as UserProfile).username.charAt(0).toUpperCase()
-                    }
+          {/* Profile Card */}
+          <View style={styles.profileCard}>
+            {/* Avatar Section */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarContainer}>
+                {(isBrand ? (profile as BrandProfile).logo_url : (profile as UserProfile).profile_image_url) ? (
+                  <Image
+                    source={{ 
+                      uri: isBrand 
+                        ? (profile as BrandProfile).logo_url 
+                        : (profile as UserProfile).profile_image_url 
+                    }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarText}>
+                      {isBrand 
+                        ? (profile as BrandProfile).name.charAt(0).toUpperCase()
+                        : (profile as UserProfile).username.charAt(0).toUpperCase()
+                      }
+                    </Text>
+                  </View>
+                )}
+              </View>
+              
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>
+                  {isBrand ? (profile as BrandProfile).name : (profile as UserProfile).username}
+                </Text>
+                {(isBrand ? (profile as BrandProfile).description : (profile as UserProfile).bio) && (
+                  <Text style={styles.profileBio}>
+                    {isBrand ? (profile as BrandProfile).description : (profile as UserProfile).bio}
                   </Text>
-                </View>
-              )}
+                )}
+                {isBrand && (profile as BrandProfile).website_url && (
+                  <TouchableOpacity>
+                    <Text style={styles.profileWebsite}>{(profile as BrandProfile).website_url}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
+            {/* Stats Cards */}
+            <View style={styles.statsSection}>
+              <View style={styles.statCard}>
                 <Text style={styles.statNumber}>
                   {isBrand ? (profile as BrandProfile).articles_count + (profile as BrandProfile).outfits_count : (profile as UserProfile).outfits_count}
                 </Text>
-                <Text style={styles.statLabel}>posts</Text>
+                <Text style={styles.statLabel}>Posts</Text>
               </View>
-              <TouchableOpacity style={styles.statItem}>
+              <TouchableOpacity style={styles.statCard}>
                 <Text style={styles.statNumber}>{profile.followers_count}</Text>
-                <Text style={styles.statLabel}>followers</Text>
+                <Text style={styles.statLabel}>Followers</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.statItem}>
+              <TouchableOpacity style={styles.statCard}>
                 <Text style={styles.statNumber}>{profile.following_count}</Text>
-                <Text style={styles.statLabel}>following</Text>
+                <Text style={styles.statLabel}>Following</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Bio/Description */}
-          <View style={styles.bioSection}>
-            <Text style={styles.displayName}>
-              {isBrand ? (profile as BrandProfile).name : (profile as UserProfile).username}
-            </Text>
-            {(isBrand ? (profile as BrandProfile).description : (profile as UserProfile).bio) && (
-              <Text style={styles.bio}>
-                {isBrand ? (profile as BrandProfile).description : (profile as UserProfile).bio}
-              </Text>
-            )}
-            {isBrand && (profile as BrandProfile).website_url && (
-              <TouchableOpacity>
-                <Text style={styles.website}>{(profile as BrandProfile).website_url}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            {isOwnProfile ? (
-              <>
-                <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-                  <Text style={styles.editButtonText}>Edit Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-                  <Text style={styles.shareButtonText}>Share Profile</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity 
-                  style={[styles.followButton, isFollowing && styles.followingButton]} 
-                  onPress={handleFollow}
-                >
-                  <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.messageButton} onPress={handleMessage}>
-                  <Text style={styles.messageButtonText}>Message</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Content Type Selector (for brands) */}
-        {isBrand && (
-          <View style={styles.contentSelector}>
-            <TouchableOpacity
-              style={[
-                styles.contentTab,
-                selectedContent === 'articles' && styles.activeContentTab,
-              ]}
-              onPress={() => handleContentTypeChange('articles')}
-            >
-              <Icon name="pricetag-outline" size={20} color={selectedContent === 'articles' ? '#ffffff' : '#666666'} />
-              <Text style={styles.contentTabCount}>{articles.length}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.contentTab,
-                selectedContent === 'outfits' && styles.activeContentTab,
-              ]}
-              onPress={() => handleContentTypeChange('outfits')}
-            >
-              <Icon name="shirt-outline" size={20} color={selectedContent === 'outfits' ? '#ffffff' : '#666666'} />
-              <Text style={styles.contentTabCount}>{outfits.length}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Content Grid */}
-        <View style={styles.contentGrid}>
-          {contentLoading ? (
-            <View style={styles.contentLoadingContainer}>
-              <ActivityIndicator size="large" color="#ffffff" />
-              <Text style={styles.loadingText}>Loading {isBrand ? selectedContent : 'outfits'}...</Text>
-            </View>
-          ) : contentError ? (
-            <View style={styles.contentErrorContainer}>
-              <Text style={styles.errorText}>{contentError}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={loadContent}>
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {getContentData().length > 0 ? (
-                <FlatList
-                  data={getContentData()}
-                  renderItem={renderGridItem}
-                  numColumns={3}
-                  keyExtractor={(item) => item.id}
-                  showsVerticalScrollIndicator={false}
-                  scrollEnabled={false}
-                  contentContainerStyle={styles.gridContainer}
-                  columnWrapperStyle={getContentData().length > 0 ? styles.gridRow : undefined}
-                />
+            {/* Action Buttons */}
+            <View style={styles.actionSection}>
+              {isOwnProfile ? (
+                <View style={styles.ownProfileActions}>
+                  <TouchableOpacity style={styles.primaryButton} onPress={handleEditProfile}>
+                    <Icon name="create-outline" size={18} color="#000000" />
+                    <Text style={styles.primaryButtonText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.secondaryButton} onPress={handleShare}>
+                    <Icon name="share-outline" size={18} color="#666666" />
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <View style={styles.contentPlaceholder}>
-                  <Icon 
-                    name={isBrand ? (selectedContent === 'articles' ? 'pricetag-outline' : 'shirt-outline') : 'shirt-outline'} 
-                    size={48} 
-                    color="#666666" 
-                    style={styles.placeholderIcon}
-                  />
-                  <Text style={styles.placeholderText}>
-                    No {isBrand ? selectedContent : 'outfits'} uploaded yet
-                  </Text>
-                  <Text style={styles.placeholderSubText}>
-                    Start creating {isBrand ? selectedContent : 'outfits'} to see them here
-                  </Text>
+                <View style={styles.otherProfileActions}>
                   <TouchableOpacity 
-                    style={styles.createButton}
-                    onPress={() => Alert.alert(
-                      'Create Content', 
-                      `Navigate to create ${isBrand ? selectedContent : 'outfit'} screen`
-                    )}
+                    style={[styles.primaryButton, isFollowing && styles.followingButton]} 
+                    onPress={handleFollow}
                   >
-                    <Text style={styles.createButtonText}>
-                      Create {isBrand ? (selectedContent === 'articles' ? 'Article' : 'Outfit') : 'Outfit'}
+                    <Icon 
+                      name={isFollowing ? "checkmark" : "person-add-outline"} 
+                      size={18} 
+                      color={isFollowing ? "#666666" : "#000000"} 
+                    />
+                    <Text style={[styles.primaryButtonText, isFollowing && styles.followingButtonText]}>
+                      {isFollowing ? 'Following' : 'Follow'}
                     </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.secondaryButton} onPress={handleMessage}>
+                    <Icon name="chatbubble-outline" size={18} color="#666666" />
                   </TouchableOpacity>
                 </View>
               )}
-            </>
+            </View>
+          </View>
+
+          {/* Content Type Selector (for brands) */}
+          {isBrand && (
+            <View style={styles.contentSelectorCard}>
+              <TouchableOpacity
+                style={[
+                  styles.contentTab,
+                  selectedContent === 'articles' && styles.activeContentTab,
+                ]}
+                onPress={() => handleContentTypeChange('articles')}
+              >
+                <Icon 
+                  name="pricetag-outline" 
+                  size={20} 
+                  color={selectedContent === 'articles' ? '#000000' : '#666666'} 
+                />
+                <Text style={[
+                  styles.contentTabText,
+                  selectedContent === 'articles' && styles.activeContentTabText
+                ]}>
+                  Articles ({articles.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.contentTab,
+                  selectedContent === 'outfits' && styles.activeContentTab,
+                ]}
+                onPress={() => handleContentTypeChange('outfits')}
+              >
+                <Icon 
+                  name="shirt-outline" 
+                  size={20} 
+                  color={selectedContent === 'outfits' ? '#000000' : '#666666'} 
+                />
+                <Text style={[
+                  styles.contentTabText,
+                  selectedContent === 'outfits' && styles.activeContentTabText
+                ]}>
+                  Outfits ({outfits.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
-        </View>
-      </ScrollView>
+
+          {/* Content Grid */}
+          <View style={styles.contentCard}>
+            <Text style={styles.contentCardTitle}>
+              {isBrand ? (selectedContent === 'articles' ? 'My Articles' : 'My Outfits') : 'My Outfits'}
+            </Text>
+            
+            {contentLoading ? (
+              <View style={styles.contentLoadingContainer}>
+                <ActivityIndicator size="large" color="#666666" />
+                <Text style={styles.contentLoadingText}>Loading {isBrand ? selectedContent : 'outfits'}...</Text>
+              </View>
+            ) : contentError ? (
+              <View style={styles.contentErrorContainer}>
+                <Icon name="alert-circle-outline" size={48} color="#ff4444" />
+                <Text style={styles.contentErrorText}>{contentError}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={loadContent}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {getContentData().length > 0 ? (
+                  <FlatList
+                    data={getContentData()}
+                    renderItem={renderGridItem}
+                    numColumns={3}
+                    keyExtractor={(item) => item.id}
+                    showsVerticalScrollIndicator={false}
+                    scrollEnabled={false}
+                    contentContainerStyle={styles.gridContainer}
+                    columnWrapperStyle={getContentData().length > 0 ? styles.gridRow : undefined}
+                  />
+                ) : (
+                  <View style={styles.emptyContentContainer}>
+                    <View style={styles.emptyIconContainer}>
+                      <Icon 
+                        name={isBrand ? (selectedContent === 'articles' ? 'pricetag-outline' : 'shirt-outline') : 'shirt-outline'} 
+                        size={40} 
+                        color="#E8D5C4" 
+                      />
+                    </View>
+                    <Text style={styles.emptyContentTitle}>
+                      No {isBrand ? selectedContent : 'outfits'} yet
+                    </Text>
+                    <Text style={styles.emptyContentSubtitle}>
+                      Start creating {isBrand ? selectedContent : 'outfits'} to build your collection
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.createContentButton}
+                      onPress={() => Alert.alert(
+                        'Create Content', 
+                        `Navigate to create ${isBrand ? selectedContent : 'outfit'} screen`
+                      )}
+                    >
+                      <Icon name="add" size={18} color="#000000" />
+                      <Text style={styles.createContentButtonText}>
+                        Create {isBrand ? (selectedContent === 'articles' ? 'Article' : 'Outfit') : 'Outfit'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+      </SafeAreaView>
       
       {/* Menu Screen */}
       <MenuScreen
@@ -696,28 +745,65 @@ export const ProfileScreen: React.FC = () => {
         onClose={handleMenuClose}
         onNavigate={handleMenuNavigate}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
+  },
+  beigeBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 180,
+    backgroundColor: '#E8D5C4',
+    borderBottomLeftRadius: 43,
+    borderBottomRightRadius: 43,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    color: '#000000',
+    fontSize: 16,
+    marginTop: 16,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 100,
   },
   errorText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#E8D5C4',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -725,257 +811,252 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 20,
+    zIndex: 1000,
   },
-  username: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#ffffff',
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
   },
   headerButton: {
-    marginLeft: 20,
+    padding: 8,
+    marginLeft: 12,
+    borderRadius: 16,
   },
-  headerButtonText: {
-    fontSize: 20,
-    color: '#ffffff',
+  profileCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  profileSection: {
-    paddingHorizontal: 20,
-  },
-  profileHeader: {
-    flexDirection: 'row',
+  avatarSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   avatarContainer: {
-    marginRight: 20,
+    marginBottom: 16,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#333333',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 3,
+    borderColor: '#E8D5C4',
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#333333',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 3,
+    borderColor: '#E8D5C4',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  statsContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#ffffff',
-    marginTop: 2,
-  },
-  bioSection: {
-    marginBottom: 20,
-  },
-  displayName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  bio: {
-    fontSize: 14,
-    color: '#ffffff',
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  website: {
-    fontSize: 14,
-    color: '#0095f6',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  editButton: {
-    flex: 1,
-    backgroundColor: '#222222',
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  editButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  shareButton: {
-    backgroundColor: '#222222',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  shareButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  followButton: {
-    flex: 1,
-    backgroundColor: '#0095f6',
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  followingButton: {
-    backgroundColor: '#222222',
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  followButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  followingButtonText: {
-    color: '#ffffff',
-  },
-  messageButton: {
-    backgroundColor: '#222222',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#333333',
-  },
-  messageButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  contentSelector: {
-    flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: '#333333',
-  },
-  contentTab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'transparent',
-  },
-  activeContentTab: {
-    borderBottomColor: '#ffffff',
-  },
-  contentTabIcon: {
-    marginBottom: 2,
-  },
-  contentTabCount: {
-    fontSize: 11,
+    fontSize: 36,
+    fontWeight: '700',
     color: '#666666',
-    fontWeight: '500',
   },
-  contentGrid: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  contentPlaceholder: {
-    padding: 40,
+  profileInfo: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333333',
-    borderRadius: 8,
   },
-  placeholderIcon: {
-    marginBottom: 16,
-    opacity: 0.6,
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#ffffff',
+  profileName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
   },
-  placeholderSubText: {
-    fontSize: 14,
+  profileBio: {
+    fontSize: 15,
     color: '#666666',
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 20,
+    marginBottom: 8,
+    paddingHorizontal: 20,
   },
-  createButton: {
-    backgroundColor: '#0095f6',
-    paddingHorizontal: 24,
+  profileWebsite: {
+    fontSize: 14,
+    color: '#0095f6',
+    textAlign: 'center',
+  },
+  statsSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  actionSection: {
+    alignItems: 'center',
+  },
+  ownProfileActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  otherProfileActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: '#E8D5C4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginRight: 8,
   },
-  createButtonText: {
-    color: '#ffffff',
+  primaryButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  followingButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  followingButtonText: {
+    color: '#666666',
+  },
+  secondaryButton: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentSelectorCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 8,
+    marginBottom: 16,
+    flexDirection: 'row',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  contentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  activeContentTab: {
+    backgroundColor: '#E8D5C4',
+  },
+  contentTabText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#666666',
+    marginLeft: 8,
   },
-  // Grid styles
+  activeContentTabText: {
+    color: '#000000',
+  },
+  contentCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  contentCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
+  },
   contentLoadingContainer: {
     padding: 40,
     alignItems: 'center',
   },
-  loadingText: {
-    color: '#ffffff',
+  contentLoadingText: {
+    color: '#666666',
     fontSize: 14,
-    marginTop: 10,
+    marginTop: 12,
   },
   contentErrorContainer: {
     padding: 40,
     alignItems: 'center',
   },
-  retryButton: {
-    backgroundColor: '#0095f6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginTop: 16,
-  },
-  retryButtonText: {
-    color: '#ffffff',
+  contentErrorText: {
+    color: '#000000',
     fontSize: 14,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 20,
   },
   gridContainer: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   gridRow: {
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   gridItem: {
-    width: (width - 50) / 3, // Account for padding and gaps between items
+    width: (width - 80) / 3, // Account for card padding and gaps
     aspectRatio: 1,
-    marginBottom: 2,
-    marginHorizontal: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#111111',
+    backgroundColor: '#f8f8f8',
+    position: 'relative',
   },
   gridImage: {
     width: '100%',
@@ -989,33 +1070,73 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111111',
+    backgroundColor: '#f8f8f8',
     zIndex: 1,
   },
   gridImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#222222',
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  gridImagePlaceholderText: {
-    color: '#666666',
-    fontSize: 10,
-    textAlign: 'center',
-  },
   priceOverlay: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   priceText: {
     color: '#ffffff',
     fontSize: 10,
     fontWeight: '600',
+  },
+  emptyContentContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyContentTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyContentSubtitle: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  createContentButton: {
+    backgroundColor: '#E8D5C4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  createContentButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  bottomSpace: {
+    height: 40,
   },
 });
