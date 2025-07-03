@@ -186,12 +186,8 @@ export const OutfitFeedScreen: React.FC = () => {
           data={outfits}
           renderItem={renderOutfit}
           keyExtractor={(item) => item.id}
-          pagingEnabled={true}
-          showsVerticalScrollIndicator={false}
-          snapToInterval={height * 0.9}
-          snapToAlignment="start"
-          decelerationRate="fast"
           contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -258,7 +254,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   listContainer: {
-    flexGrow: 1,
+    paddingTop: 120, // Space for header
+    paddingBottom: 20,
   },
   emptyContainer: {
     flex: 1,

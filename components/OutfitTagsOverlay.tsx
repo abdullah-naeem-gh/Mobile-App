@@ -148,51 +148,51 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 3,
+    backgroundColor: '#E8D5C4', // Beige background to match theme
+    borderWidth: 2, // Thinner border
     borderColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  tagCard: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderRadius: 8,
-    minWidth: 120,
-    maxWidth: 180,
-    zIndex: 200,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 10,
   },
+  tagCard: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)', // Slightly more opaque
+    borderRadius: 12, // Slightly larger radius
+    minWidth: 140, // Slightly wider
+    maxWidth: 200,
+    zIndex: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 12,
+  },
   tagCardContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   tagCardTitle: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-    lineHeight: 16,
+    fontSize: 14, // Slightly larger text
+    fontWeight: '700', // Bolder weight
+    marginBottom: 6,
+    lineHeight: 18,
   },
   tagCardPrice: {
-    color: '#ccc',
-    fontSize: 11,
-    fontWeight: '500',
+    color: '#E8D5C4', // Beige color to match theme
+    fontSize: 12,
+    fontWeight: '600',
   },
   tagCardArrow: {
     position: 'absolute',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: 'rgba(0, 0, 0, 0.9)',
+    borderTopColor: 'rgba(0, 0, 0, 0.95)',
   },
   tagCardArrowLeft: {
     left: 10,

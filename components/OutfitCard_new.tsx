@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
     width: width,
     height: height * 0.9, // Slightly shorter than full screen for better spacing
     paddingHorizontal: 10,
-    paddingVertical: 0,
-    justifyContent: 'center', // Center the card vertically
+    paddingVertical: 10,
+    justifyContent: 'flex-start',
   },
   cardContent: {
     backgroundColor: '#ffffff',
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
     width: cardWidth,
     height: cardHeight,
     alignSelf: 'center',
-    marginTop: 0,
-    marginBottom: 0,
+    marginTop: 20,
+    marginBottom: 20,
   },
   imageContainer: {
     position: 'relative',

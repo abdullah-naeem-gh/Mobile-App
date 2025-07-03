@@ -62,7 +62,9 @@ export const HomeScreen: React.FC = () => {
   const [currentBackgroundColor, setCurrentBackgroundColor] = useState('#E8D5C4');
   const [previousBackgroundColor, setPreviousBackgroundColor] = useState('#E8D5C4');
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
-  const backgroundColorAnim = useRef(new Animated.Value(1)).current;
+  const backgroundColorAnimValue = useRef(new Animated.Value(1)).current;
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const targetColorRef = useRef('#E8D5C4'); // Track the target color to prevent redundant transitions
 
   const loadArticles = useCallback(async (
     currentPage: number = 0, 
@@ -128,20 +130,23 @@ export const HomeScreen: React.FC = () => {
           const newColor = getArticleBackgroundColor(currentArticle.colors);
           console.log('Generated background color:', newColor);
           
-          // Only animate if color is different
-          if (newColor !== currentBackgroundColor) {
-            // Store previous color for smooth transition
-            setPreviousBackgroundColor(currentBackgroundColor);
+          // Only update if color is different from what we're targeting
+          if (newColor !== targetColorRef.current) {
+            console.log(`Color transition: ${targetColorRef.current} -> ${newColor}`);
             
-            // Reset animation to 0 and animate to 1
-            backgroundColorAnim.setValue(0);
+            // Update target color reference
+            targetColorRef.current = newColor;
+            
+            // Set up proper color interpolation
+            setPreviousBackgroundColor(currentBackgroundColor);
             setCurrentBackgroundColor(newColor);
             
-            // Smooth color transition animation
-            Animated.timing(backgroundColorAnim, {
+            // Animate from 0 to 1 for smooth color interpolation
+            backgroundColorAnimValue.setValue(0);
+            Animated.timing(backgroundColorAnimValue, {
               toValue: 1,
-              duration: 400, // Faster transition for better responsiveness
-              useNativeDriver: false, // Color animations cannot use native driver
+              duration: 300,
+              useNativeDriver: false,
             }).start();
           }
         } catch (error) {
@@ -152,13 +157,30 @@ export const HomeScreen: React.FC = () => {
     };
 
     updateBackgroundColor();
-  }, [articles, currentArticleIndex, currentBackgroundColor, backgroundColorAnim]);
+  }, [articles, currentArticleIndex]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleScroll = (event: any) => {
     const { contentOffset } = event.nativeEvent;
     const index = Math.round(contentOffset.y / height);
+    
     if (index !== currentArticleIndex && index >= 0 && index < articles.length) {
       console.log(`Scroll detected: changing from article ${currentArticleIndex} to ${index}`);
+      
+      // Clear existing timeout to prevent multiple rapid updates
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Update immediately for instant response
       setCurrentArticleIndex(index);
     }
   };
@@ -306,21 +328,17 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Dynamic background rectangle with smooth color transitions */}
+      {/* Dynamic background with smooth color transitions */}
       <Animated.View 
         style={[
           styles.beigeBackground, 
           { 
-            backgroundColor: backgroundColorAnim.interpolate({
+            backgroundColor: backgroundColorAnimValue.interpolate({
               inputRange: [0, 1],
               outputRange: [previousBackgroundColor, currentBackgroundColor],
               extrapolate: 'clamp',
             }),
-            opacity: backgroundColorAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.85, 0.95],
-              extrapolate: 'clamp',
-            }),
+            opacity: 0.95,
           }
         ]} 
       />
