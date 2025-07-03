@@ -11,11 +11,13 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  ScrollView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { likesService, LikedItem } from '../services/likesService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface LikesScreenProps {
   onBack: () => void;
@@ -160,7 +162,7 @@ export const LikesScreen: React.FC<LikesScreenProps> = ({ onBack }) => {
         )}
         
         <View style={styles.likeIconOverlay}>
-          <Text style={styles.likeIcon}>❤️</Text>
+          <Icon name="heart" size={12} color="#ff3040" />
         </View>
       </TouchableOpacity>
     );
@@ -199,98 +201,152 @@ export const LikesScreen: React.FC<LikesScreenProps> = ({ onBack }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Liked</Text>
-          <View style={styles.placeholder} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text style={styles.loadingText}>Loading liked items...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <View style={styles.beigeBackground} />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Icon name="arrow-back" size={24} color="#000000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Liked Items</Text>
+            <View style={styles.placeholder} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000000" />
+            <Text style={styles.loadingText}>Loading liked items...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Liked</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <View style={styles.container}>
+      <View style={styles.beigeBackground} />
+      
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Icon name="arrow-back" size={24} color="#000000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Liked Items</Text>
+          <View style={styles.placeholder} />
+        </View>
 
-      {/* Tab Selector */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'all' && styles.activeTab]}
-          onPress={() => setSelectedTab('all')}
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#000000"
+              colors={["#000000"]}
+            />
+          }
         >
-          <Text style={[styles.tabText, selectedTab === 'all' && styles.activeTabText]}>
-            All ({likedItems.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'articles' && styles.activeTab]}
-          onPress={() => setSelectedTab('articles')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'articles' && styles.activeTabText]}>
-            Articles ({likedItems.filter(item => item.articles).length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'outfits' && styles.activeTab]}
-          onPress={() => setSelectedTab('outfits')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'outfits' && styles.activeTabText]}>
-            Outfits ({likedItems.filter(item => item.outfits).length})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content Grid */}
-      <View style={styles.content}>
-        {getFilteredItems().length > 0 ? (
-          <FlatList
-            data={getFilteredItems()}
-            renderItem={renderGridItem}
-            numColumns={3}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.gridContainer}
-            columnWrapperStyle={getFilteredItems().length > 0 ? styles.gridRow : undefined}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#ffffff"
-                colors={["#ffffff"]}
+          {/* Content Selector Card */}
+          <View style={styles.contentSelectorCard}>
+            <TouchableOpacity
+              style={[styles.contentTab, selectedTab === 'all' && styles.activeContentTab]}
+              onPress={() => setSelectedTab('all')}
+            >
+              <Icon 
+                name="heart" 
+                size={16} 
+                color={selectedTab === 'all' ? '#000000' : '#666666'} 
               />
-            }
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>❤️</Text>
-            <Text style={styles.emptyTitle}>No liked items</Text>
-            <Text style={styles.emptySubtitle}>
-              Items you like will appear here
-            </Text>
+              <Text style={[styles.contentTabText, selectedTab === 'all' && styles.activeContentTabText]}>
+                All ({likedItems.length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.contentTab, selectedTab === 'articles' && styles.activeContentTab]}
+              onPress={() => setSelectedTab('articles')}
+            >
+              <Icon 
+                name="pricetag" 
+                size={16} 
+                color={selectedTab === 'articles' ? '#000000' : '#666666'} 
+              />
+              <Text style={[styles.contentTabText, selectedTab === 'articles' && styles.activeContentTabText]}>
+                Articles ({likedItems.filter(item => item.articles).length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.contentTab, selectedTab === 'outfits' && styles.activeContentTab]}
+              onPress={() => setSelectedTab('outfits')}
+            >
+              <Icon 
+                name="shirt" 
+                size={16} 
+                color={selectedTab === 'outfits' ? '#000000' : '#666666'} 
+              />
+              <Text style={[styles.contentTabText, selectedTab === 'outfits' && styles.activeContentTabText]}>
+                Outfits ({likedItems.filter(item => item.outfits).length})
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-    </SafeAreaView>
+
+          {/* Content Card */}
+          <View style={styles.contentCard}>
+            <Text style={styles.contentCardTitle}>
+              {selectedTab === 'all' ? 'All Liked Items' : 
+               selectedTab === 'articles' ? 'Liked Articles' : 'Liked Outfits'}
+            </Text>
+            
+            {getFilteredItems().length > 0 ? (
+              <FlatList
+                data={getFilteredItems()}
+                renderItem={renderGridItem}
+                numColumns={3}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.gridContainer}
+                columnWrapperStyle={getFilteredItems().length > 0 ? styles.gridRow : undefined}
+                scrollEnabled={false}
+              />
+            ) : (
+              <View style={styles.emptyContentContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <Icon name="heart-outline" size={32} color="#666666" />
+                </View>
+                <Text style={styles.emptyContentTitle}>No liked items</Text>
+                <Text style={styles.emptyContentSubtitle}>
+                  Items you like will appear here. Start exploring and like items you love!
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
+  },
+  beigeBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 180,
+    backgroundColor: '#E8D5C4',
+    borderBottomLeftRadius: 43,
+    borderBottomRightRadius: 43,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -298,22 +354,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 20,
+    zIndex: 1000,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: '#ffffff',
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
   },
   placeholder: {
     width: 40,
@@ -322,56 +375,84 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 100,
   },
   loadingText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
-    marginTop: 10,
+    marginTop: 16,
   },
-  tabContainer: {
+  contentSelectorCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 8,
+    marginBottom: 16,
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  tab: {
+  contentTab: {
     flex: 1,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
   },
-  activeTab: {
-    borderBottomColor: '#ffffff',
+  activeContentTab: {
+    backgroundColor: '#E8D5C4',
   },
-  tabText: {
+  contentTabText: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#666666',
-    fontWeight: '500',
+    marginLeft: 8,
   },
-  activeTabText: {
-    color: '#ffffff',
+  activeContentTabText: {
+    color: '#000000',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  contentCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  contentCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
   },
   gridContainer: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   gridRow: {
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   gridItem: {
-    width: (width - 50) / 3,
+    width: (width - 80) / 3, // Account for card padding and gaps
     aspectRatio: 1,
-    marginBottom: 2,
-    marginHorizontal: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#111111',
+    backgroundColor: '#f8f8f8',
     position: 'relative',
   },
   gridImage: {
@@ -386,13 +467,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111111',
+    backgroundColor: '#f8f8f8',
     zIndex: 1,
   },
   gridImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#222222',
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -403,12 +484,12 @@ const styles = StyleSheet.create({
   },
   priceOverlay: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   priceText: {
     color: '#ffffff',
@@ -417,40 +498,55 @@ const styles = StyleSheet.create({
   },
   likeIconOverlay: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   likeIcon: {
     fontSize: 12,
   },
-  emptyContainer: {
-    flex: 1,
+  emptyContentContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
     marginBottom: 20,
-    opacity: 0.6,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
+  emptyContentTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
   },
-  emptySubtitle: {
-    fontSize: 16,
+  emptyContentSubtitle: {
+    fontSize: 14,
     color: '#666666',
     textAlign: 'center',
-    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  bottomSpace: {
+    height: 40,
   },
 });
