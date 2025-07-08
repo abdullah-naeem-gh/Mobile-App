@@ -47,3 +47,4 @@ supabase/migrations/fix_is_brand_references.sql
 supabase/migrations/profile_helper_functions.sql
 remaining.md
 futureplans.md
+eas.json
