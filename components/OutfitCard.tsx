@@ -12,6 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OutfitTagsOverlay } from './OutfitTagsOverlay';
+import { PLATFORM_CONSTANTS } from '../utils/platformUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -242,14 +243,15 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
     width: width,
-    height: height * 0.9, // Slightly shorter than full screen for better spacing
+    height: height, // Full screen height for reel effect
     paddingHorizontal: 10,
     paddingVertical: 0,
-    justifyContent: 'center', // Center the card vertically
+    justifyContent: 'flex-start',
   },
   cardContent: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
+    ...PLATFORM_CONSTANTS.SHADOW_PROPS,
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
@@ -261,8 +263,8 @@ const styles = StyleSheet.create({
     width: cardWidth,
     height: cardHeight,
     alignSelf: 'center',
-    marginTop: 0,
-    marginBottom: 0,
+    marginTop: PLATFORM_CONSTANTS.OUTFIT_CARD_MARGIN_TOP, // Use outfit-specific positioning
+    marginBottom: 20,
   },
   imageContainer: {
     position: 'relative',

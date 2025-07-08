@@ -167,6 +167,13 @@ export const OutfitFeedScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Platform-specific status bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#E8D5C4" 
+        translucent={Platform.OS === 'android'}
+      />
+      
       {/* Static beige background */}
       <View style={styles.beigeBackground} />
       
@@ -215,16 +222,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      paddingTop: StatusBar.currentHeight || 0,
+    }),
   },
   beigeBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 220, // Smaller than home screen since we don't need full coverage
+    height: 661,
     backgroundColor: '#E8D5C4',
     borderBottomLeftRadius: 43,
     borderBottomRightRadius: 43,
+    opacity: 0.95,
   },
   safeArea: {
     flex: 1,
@@ -232,7 +243,7 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    top: 0,
+    top: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
     left: 0,
     right: 0,
     zIndex: 1000,
@@ -240,7 +251,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingBottom: 12,
     backgroundColor: 'transparent',
   },
@@ -261,12 +272,20 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flexGrow: 1,
+    // Only add padding for Android, keep iOS as is
+    ...(Platform.OS === 'android' && {
+      paddingTop: 90,
+    }),
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    height: height - 200, // Adjust for header
+    // Only add padding for Android, keep iOS as is
+    ...(Platform.OS === 'android' && {
+      paddingTop: 90,
+    }),
   },
   emptyText: {
     fontSize: 18,

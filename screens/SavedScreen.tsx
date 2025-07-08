@@ -12,6 +12,8 @@ import {
   RefreshControl,
   Dimensions,
   ScrollView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -303,6 +305,13 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   if (loading) {
     return (
       <View style={styles.container}>
+        {/* Platform-specific status bar */}
+        <StatusBar 
+          barStyle="dark-content" 
+          backgroundColor="#E8D5C4" 
+          translucent={Platform.OS === 'android'}
+        />
+        
         <View style={styles.beigeBackground} />
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
@@ -323,6 +332,13 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
 
   return (
     <View style={styles.container}>
+      {/* Platform-specific status bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#E8D5C4" 
+        translucent={Platform.OS === 'android'}
+      />
+      
       <View style={styles.beigeBackground} />
       
       <SafeAreaView style={styles.safeArea}>
@@ -431,13 +447,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      paddingTop: StatusBar.currentHeight || 0,
+    }),
   },
   beigeBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 180,
+    height: 200, // Increased from 180 for better coverage
     backgroundColor: '#E8D5C4',
     borderBottomLeftRadius: 43,
     borderBottomRightRadius: 43,
@@ -454,7 +473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
     paddingBottom: 20,
     zIndex: 1000,
   },
@@ -476,7 +495,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80,
   },
   loadingText: {
     color: '#000000',

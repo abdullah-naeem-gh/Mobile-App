@@ -23,6 +23,7 @@ export const PLATFORM_CONSTANTS = {
   
   // Card positioning
   ARTICLE_CARD_MARGIN_TOP: Platform.OS === 'ios' ? 100 : 55, // iOS: 100, Android: 55 (increased from 10 to move card down more)
+  OUTFIT_CARD_MARGIN_TOP: Platform.OS === 'ios' ? 100 : 55, // Same positioning as article cards for consistency
 
   // Shadow/elevation differences
   SHADOW_PROPS: Platform.OS === 'ios' 

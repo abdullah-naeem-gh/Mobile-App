@@ -12,6 +12,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -300,6 +301,13 @@ export const PostScreen: React.FC = () => {
   
   return (
     <View style={styles.container}>
+      {/* Platform-specific status bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#E8D5C4" 
+        translucent={Platform.OS === 'android'}
+      />
+      
       {/* Static beige background */}
       <View style={styles.beigeBackground} />
       
@@ -680,13 +688,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      paddingTop: StatusBar.currentHeight || 0,
+    }),
   },
   beigeBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 160,
+    height: 200, // Increased from 160 for better coverage
     backgroundColor: '#E8D5C4',
     borderBottomLeftRadius: 43,
     borderBottomRightRadius: 43,
@@ -703,7 +714,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
     paddingBottom: 15,
     zIndex: 1000,
   },
