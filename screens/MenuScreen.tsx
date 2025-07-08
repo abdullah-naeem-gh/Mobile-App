@@ -78,8 +78,9 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('AccountSettings')}
+              activeOpacity={0.7}
             >
-              <Icon name="settings-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
+              <Icon name="settings-outline" size={20} color="#000000" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Account Settings</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -87,8 +88,9 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Saved')}
+              activeOpacity={0.7}
             >
-              <Icon name="bookmark-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
+              <Icon name="bookmark-outline" size={20} color="#000000" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Saved</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -96,8 +98,9 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Likes')}
+              activeOpacity={0.7}
             >
-              <Icon name="heart-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
+              <Icon name="heart-outline" size={20} color="#000000" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Likes</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -105,8 +108,9 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Followers')}
+              activeOpacity={0.7}
             >
-              <Icon name="people-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
+              <Icon name="people-outline" size={20} color="#000000" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Followers</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -114,8 +118,9 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => handleMenuItemPress('Following')}
+              activeOpacity={0.7}
             >
-              <Icon name="person-add-outline" size={20} color="#ffffff" style={styles.menuItemIcon} />
+              <Icon name="person-add-outline" size={20} color="#000000" style={styles.menuItemIcon} />
               <Text style={styles.menuItemText}>Following</Text>
               <Text style={styles.menuItemArrow}>›</Text>
             </TouchableOpacity>
@@ -125,6 +130,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
             <TouchableOpacity 
               style={styles.signOutButton}
               onPress={handleSignOut}
+              activeOpacity={0.8}
             >
               <Text style={styles.signOutText}>Sign Out</Text>
             </TouchableOpacity>
@@ -153,50 +159,63 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    width: width * 0.8,
-    backgroundColor: '#111111',
-    borderLeftWidth: 1,
-    borderLeftColor: '#333333',
+    width: width * 0.85,
+    backgroundColor: '#E8D5C4', // Beige background
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: -5,
+      height: 0,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   menuContent: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 32,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   closeButton: {
-    width: 30,
-    height: 30,
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#000000',
+    fontWeight: '600',
   },
   menuItems: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 24,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#222222',
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   menuItemIcon: {
     marginRight: 16,
@@ -206,27 +225,39 @@ const styles = StyleSheet.create({
   menuItemText: {
     flex: 1,
     fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '500',
+    color: '#000000',
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   menuItemArrow: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#666666',
+    fontWeight: '600',
   },
   footer: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
     borderTopWidth: 1,
-    borderTopColor: '#333333',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
   },
   signOutButton: {
-    backgroundColor: '#ff4444',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: '#000000',
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   signOutText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: -0.2,
   },
 });

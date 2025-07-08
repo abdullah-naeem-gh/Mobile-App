@@ -155,7 +155,7 @@ export const OnboardingScreen = () => {
                     value={username}
                     onChangeText={setUsername}
                     placeholder="Choose a unique username"
-                    placeholderTextColor="#666666"
+                    placeholderTextColor="#999999"
                     autoCapitalize="none"
                   />
                 </View>
@@ -167,7 +167,7 @@ export const OnboardingScreen = () => {
                     value={fullName}
                     onChangeText={setFullName}
                     placeholder="Your full name"
-                    placeholderTextColor="#666666"
+                    placeholderTextColor="#999999"
                   />
                 </View>
 
@@ -446,7 +446,7 @@ export const OnboardingScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#E8D5C4', // Beige background
   },
   scrollView: {
     flex: 1,
@@ -459,9 +459,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000', // Black text on beige
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
@@ -470,21 +471,29 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: '#cccccc',
+    color: '#555555',
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 24,
   },
   typeButton: {
-    backgroundColor: '#111111',
+    backgroundColor: '#ffffff', // White cards
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#000000', // Black border
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   typeButtonText: {
-    color: '#ffffff',
+    color: '#000000', // Black text
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 4,
@@ -504,17 +513,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000', // Black labels
+    letterSpacing: -0.2,
   },
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#333333',
-    borderRadius: 8,
+    borderColor: '#e0e0e0', // Soft gray border
+    borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#ffffff',
-    backgroundColor: '#111111',
+    color: '#000000', // Black text
+    backgroundColor: '#ffffff', // White input background
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   textArea: {
     height: 100,
@@ -524,40 +542,61 @@ const styles = StyleSheet.create({
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   optionButton: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#e0e0e0', // Soft gray border
     borderRadius: 20,
-    backgroundColor: '#111111',
+    backgroundColor: '#ffffff', // White background
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   optionButtonSelected: {
-    borderColor: '#f5f5f5',
-    backgroundColor: '#333333',
+    borderColor: '#000000',
+    backgroundColor: '#000000', // Black when selected
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   optionText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     textTransform: 'capitalize',
+    fontWeight: '500',
   },
   optionTextSelected: {
-    color: '#ffffff',
+    color: '#ffffff', // White text when selected
   },
   completeButton: {
     height: 60,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 30,
+    backgroundColor: '#000000', // Black button
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   completeButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#ffffff', // White text on black button
+    letterSpacing: -0.2,
   },
   loadingText: {
     marginTop: 10,

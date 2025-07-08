@@ -114,7 +114,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#fff" />
+              <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.title}>Filters</Text>
             <TouchableOpacity onPress={handleClear} style={styles.clearAllButton}>
@@ -131,7 +131,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search articles..."
-                  placeholderTextColor="#666"
+                  placeholderTextColor="#999"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
@@ -279,7 +279,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#E8D5C4', // Beige background
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -289,56 +289,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)', // Very subtle border
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
   },
   clearAllButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   clearAllText: {
-    color: '#fff',
+    color: '#000000',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
+    paddingTop: 8,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    backgroundColor: '#ffffff', // White card background
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 12,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111',
+    backgroundColor: '#f8f8f8',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#e0e0e0', // Soft gray border
   },
   searchInput: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    color: '#fff',
+    color: '#000000',
   },
   clearSearchButton: {
     padding: 4,
@@ -346,28 +362,40 @@ const styles = StyleSheet.create({
   filterGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   filterChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#222',
+    backgroundColor: '#f8f8f8', // Light gray background
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#e0e0e0', // Soft border
     marginBottom: 8,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activeFilterChip: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   filterChipText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#000000',
     textAlign: 'center',
+    fontWeight: '500',
   },
   activeFilterChipText: {
-    color: '#000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   bottomSpace: {
@@ -376,33 +404,42 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#333',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)', // Very subtle border
     gap: 12,
+    backgroundColor: '#ffffff', // White background for button area
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cancelButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#f8f8f8',
     borderWidth: 1,
-    borderColor: '#666',
+    borderColor: '#e0e0e0',
   },
   applyButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
   },
   cancelButtonText: {
-    color: '#fff',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
   applyButtonText: {
-    color: '#000',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },

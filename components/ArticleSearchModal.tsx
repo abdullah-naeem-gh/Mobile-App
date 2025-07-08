@@ -98,10 +98,10 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
         />
       )}
       <View style={styles.articleInfo}>
-        <Text style={styles.articleTitle} numberOfLines={2}>
+        <Text style={[styles.articleTitle, currentSelectedArticle?.id === item.id && styles.selectedArticleTitle]} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.articlePrice}>
+        <Text style={[styles.articlePrice, currentSelectedArticle?.id === item.id && styles.selectedArticlePrice]}>
           {item.currency} {item.price}
         </Text>
         <Text style={styles.articleCategory}>
@@ -109,7 +109,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
         </Text>
       </View>
       {currentSelectedArticle?.id === item.id && (
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+        <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
       )}
     </TouchableOpacity>
   );
@@ -128,7 +128,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#fff" />
+              <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.title}>Select Article</Text>
             <View style={styles.placeholder} />
@@ -140,7 +140,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search articles..."
-                placeholderTextColor="#666"
+                placeholderTextColor="#999"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
@@ -222,7 +222,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#E8D5C4', // Beige background
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: '#000000', // Black border
   },
   closeButton: {
     padding: 4,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: '#000000', // Black text
   },
   placeholder: {
     width: 32,
@@ -254,18 +254,18 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111',
+    backgroundColor: '#ffffff', // White background
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#000000', // Black border
   },
   searchInput: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    color: '#fff',
+    color: '#000000', // Black text
   },
   clearButton: {
     padding: 4,
@@ -315,12 +315,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)', // Light black border
+    backgroundColor: '#ffffff', // White background for list items
+    borderRadius: 8,
+    marginBottom: 8,
+    paddingHorizontal: 12,
   },
   selectedArticleItem: {
-    backgroundColor: '#1a4d3a',
-    borderColor: '#4CAF50',
-    borderWidth: 1,
+    backgroundColor: '#000000', // Black when selected
+    borderColor: '#000000',
+    borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 12,
   },
@@ -334,16 +338,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   articleTitle: {
-    color: '#fff',
+    color: '#000000', // Black text
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 4,
   },
+  selectedArticleTitle: {
+    color: '#ffffff', // White text when selected
+  },
   articlePrice: {
-    color: '#fff',
+    color: '#000000', // Black text
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
+  },
+  selectedArticlePrice: {
+    color: '#ffffff', // White text when selected
   },
   articleCategory: {
     color: '#666',
@@ -355,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#333',
+    borderTopColor: '#000000', // Black border
     gap: 12,
   },
   actionButton: {
@@ -368,21 +378,21 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#666',
+    borderColor: '#000000', // Black border
   },
   confirmButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#000000', // Black button
   },
   disabledButton: {
-    backgroundColor: '#333',
+    backgroundColor: '#999999', // Gray when disabled
   },
   cancelButtonText: {
-    color: '#fff',
+    color: '#000000', // Black text
     fontSize: 16,
     fontWeight: '600',
   },
   confirmButtonText: {
-    color: '#000',
+    color: '#ffffff', // White text on black button
     fontSize: 16,
     fontWeight: '600',
   },
