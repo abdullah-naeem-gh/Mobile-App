@@ -13,6 +13,7 @@ import {
   Platform,
   Dimensions,
   Animated,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,6 +78,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Platform-specific status bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#E8D5C4" 
+        translucent={Platform.OS === 'android'}
+      />
+      
       {/* Beige background */}
       <View style={styles.beigeBackground} />
       
@@ -202,6 +210,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      paddingTop: StatusBar.currentHeight || 0,
+    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -224,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
     paddingBottom: 30,
     zIndex: 1000,
   },
@@ -248,6 +259,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingBottom: 40,
+    // Only add extra padding for Android
+    ...(Platform.OS === 'android' && {
+      paddingTop: 20,
+    }),
   },
   formContainer: {
     backgroundColor: '#ffffff',

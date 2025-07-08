@@ -18,6 +18,8 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  Platform,
+  StatusBar,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -501,6 +503,13 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Platform-specific status bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#E8D5C4" 
+        translucent={Platform.OS === 'android'}
+      />
+      
       {/* Static beige background */}
       <View style={styles.beigeBackground} />
       
@@ -753,6 +762,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      paddingTop: StatusBar.currentHeight || 0,
+    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -775,7 +787,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80,
   },
   loadingText: {
     color: '#000000',
@@ -786,7 +798,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: Platform.OS === 'ios' ? 100 : 80,
   },
   errorText: {
     color: '#000000',
@@ -810,7 +822,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
     paddingBottom: 20,
     zIndex: 1000,
   },
@@ -835,6 +847,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
+    marginTop: Platform.OS === 'ios' ? 0 : 10, // Extra spacing for Android
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,

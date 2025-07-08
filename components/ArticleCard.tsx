@@ -9,11 +9,14 @@ import {
   Linking,
   ActivityIndicator,
   Animated,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Article } from '../types';
 import { getImageDimensions, calculateOptimalDimensions } from '../lib/imageUtils';
+import { PLATFORM_CONSTANTS } from '../utils/platformUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -265,6 +268,7 @@ const styles = StyleSheet.create({
   cardContent: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
+    ...PLATFORM_CONSTANTS.SHADOW_PROPS,
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
@@ -276,7 +280,7 @@ const styles = StyleSheet.create({
     width: cardWidth, // Responsive width
     height: cardHeight, // Responsive height maintaining aspect ratio
     alignSelf: 'center',
-    marginTop: 100, // Adjusted position for larger cards
+    marginTop: PLATFORM_CONSTANTS.ARTICLE_CARD_MARGIN_TOP, // Platform-specific positioning
     marginBottom: 20,
   },
   imageContainer: {
