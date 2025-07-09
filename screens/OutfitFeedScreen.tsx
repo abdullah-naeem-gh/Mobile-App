@@ -96,10 +96,8 @@ export const OutfitFeedScreen: React.FC = () => {
       )
     );
 
-    // Make API call
-    const result = isLiked 
-      ? await outfitService.likeOutfit(outfitId, user.id)
-      : await outfitService.unlikeOutfit(outfitId, user.id);
+    // Make API call using toggle method
+    const result = await outfitService.toggleLike(outfitId);
 
     if (!result.success) {
       // Revert optimistic update on failure
@@ -134,10 +132,8 @@ export const OutfitFeedScreen: React.FC = () => {
       )
     );
 
-    // Make API call
-    const result = isSaved 
-      ? await outfitService.saveOutfit(outfitId, user.id)
-      : await outfitService.unsaveOutfit(outfitId, user.id);
+    // Make API call using toggle method
+    const result = await outfitService.toggleSave(outfitId);
 
     if (!result.success) {
       // Revert optimistic update on failure

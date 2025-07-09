@@ -6,11 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Linking,
   ActivityIndicator,
   Animated,
   Platform,
-  StatusBar,
+  Alert,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -162,10 +162,22 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const handleExternalLink = () => {
+    console.log('Article external link clicked:', article.title);
+    console.log('Purchase URL:', article.purchase_url);
+    
     if (article.purchase_url) {
-      Linking.openURL(article.purchase_url).catch(() => {
-        console.log('Could not open URL');
+      console.log('Opening URL directly in external browser:', article.purchase_url);
+      Linking.openURL(article.purchase_url).catch(err => {
+        console.error('Failed to open URL in external browser:', err);
+        Alert.alert('Error', 'Unable to open the link. Please try again later.');
       });
+    } else {
+      console.log('No purchase URL available for article:', article.title);
+      Alert.alert(
+        'No Purchase Link',
+        'This article doesn\'t have a purchase link available.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -178,118 +190,120 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   return (
-    <Animated.View style={[styles.container, { transform: [{ scale: cardScale }] }]}>
-      <View style={styles.cardContent}>
-        {/* Article Image with overlay info */}
-        <View style={styles.imageContainer}>
-            {/* Close button */}
-            <TouchableOpacity style={styles.closeButton}>
-              <Icon name="close" size={20} color="#000000" />
-            </TouchableOpacity>
-            
-            {/* Like button */}
-            <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
-              <Icon 
-                name={article.is_liked ? "heart" : "heart-outline"} 
-                size={24} 
-                color={article.is_liked ? "#ff3040" : "#000000"} 
-              />
-              <Text style={styles.likeCount}>{article.likes_count}</Text>
-            </TouchableOpacity>
-
-            {imageLoading && imageUrl && (
-              <View style={styles.imageLoadingContainer}>
-                <ActivityIndicator size="large" color="#666666" />
-              </View>
-            )}
-            {!imageUrl || imageError ? (
-              <View style={styles.imageErrorContainer}>
-                <Icon name="image-outline" size={40} color="#333333" />
-                <Text style={styles.imageErrorText}>
-                  {!imageUrl ? 'No image available' : 'Failed to load image'}
-                </Text>
-              </View>
-            ) : (
-              <Animated.View style={{ opacity: imageOpacity, width: '100%', height: '100%' }}>
-                <Image
-                  source={{ uri: imageUrl }}
-                  style={styles.articleImage}
-                  onLoad={() => {
-                    setImageLoading(false);
-                    Animated.timing(imageOpacity, {
-                      toValue: 1,
-                      duration: 400, // Slower, smoother fade-in
-                      useNativeDriver: true,
-                    }).start();
-                  }}
-                  onError={() => {
-                    console.log('Image load error for:', imageUrl);
-                    setImageLoading(false);
-                    setImageError(true);
-                  }}
-                  resizeMode={getResizeMode()} // Dynamic resize mode based on image dimensions
-                />
-              </Animated.View>
-            )}
-
-            {/* Overlay with article info */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']} // Strong blur effect: 80% to 30% to 0%
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.overlayInfo}
-            >
-              <TouchableOpacity onPress={handleArticleNamePress} activeOpacity={0.7} style={styles.articleTitleRow}>
-                <Text 
-                  style={[styles.articleName, { flex: 1, marginRight: 8 }]} 
-                  numberOfLines={isArticleNameExpanded ? undefined : 1}
-                  ellipsizeMode={isArticleNameExpanded ? undefined : 'tail'}
-                >
-                  {article.title}
-                </Text>
-                <Text style={styles.priceOverlay}>{formatPrice()}</Text>
+    <>
+      <Animated.View style={[styles.container, { transform: [{ scale: cardScale }] }]}>
+        <View style={styles.cardContent}>
+          {/* Article Image with overlay info */}
+          <View style={styles.imageContainer}>
+              {/* Close button */}
+              <TouchableOpacity style={styles.closeButton}>
+                <Icon name="close" size={20} color="#000000" />
               </TouchableOpacity>
-              <Text style={styles.brandNameOverlay}>{article.brand?.name || 'Unknown Brand'}</Text>
-            </LinearGradient>
-          </View>
+              
+              {/* Like button */}
+              <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+                <Icon 
+                  name={article.is_liked ? "heart" : "heart-outline"} 
+                  size={24} 
+                  color={article.is_liked ? "#ff3040" : "#000000"} 
+                />
+                <Text style={styles.likeCount}>{article.likes_count || 0}</Text>
+              </TouchableOpacity>
 
-        {/* Bottom section */}
-        <View style={styles.bottomSection}>
-          <View style={styles.categoryRow}>
-            <Text style={styles.categoryText}>{article.category}</Text>
-            <TouchableOpacity onPress={handleSave}>
-              <Icon 
-                name={article.is_saved ? "bookmark" : "bookmark-outline"} 
-                size={20} 
-                color="#000000" 
-              />
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={styles.description} numberOfLines={2}>
-            {article.description || 'No description available...'}
-          </Text>
-          
-          <View style={styles.tagsRow}>
-            <View style={styles.tagsContainer}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{article.category}</Text>
-              </View>
-              {article.brand?.name && (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{article.brand.name}</Text>
+              {imageLoading && imageUrl && (
+                <View style={styles.imageLoadingContainer}>
+                  <ActivityIndicator size="large" color="#666666" />
                 </View>
               )}
+              {!imageUrl || imageError ? (
+                <View style={styles.imageErrorContainer}>
+                  <Icon name="image-outline" size={40} color="#333333" />
+                  <Text style={styles.imageErrorText}>
+                    {!imageUrl ? 'No image available' : 'Failed to load image'}
+                  </Text>
+                </View>
+              ) : (
+                <Animated.View style={{ opacity: imageOpacity, width: '100%', height: '100%' }}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.articleImage}
+                    onLoad={() => {
+                      setImageLoading(false);
+                      Animated.timing(imageOpacity, {
+                        toValue: 1,
+                        duration: 400, // Slower, smoother fade-in
+                        useNativeDriver: true,
+                      }).start();
+                    }}
+                    onError={() => {
+                      console.log('Image load error for:', imageUrl);
+                      setImageLoading(false);
+                      setImageError(true);
+                    }}
+                    resizeMode={getResizeMode()} // Dynamic resize mode based on image dimensions
+                  />
+                </Animated.View>
+              )}
+
+              {/* Overlay with article info */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']} // Strong blur effect: 80% to 30% to 0%
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.overlayInfo}
+              >
+                <TouchableOpacity onPress={handleArticleNamePress} activeOpacity={0.7} style={styles.articleTitleRow}>
+                  <Text 
+                    style={[styles.articleName, { flex: 1, marginRight: 8 }]} 
+                    numberOfLines={isArticleNameExpanded ? undefined : 1}
+                    ellipsizeMode={isArticleNameExpanded ? undefined : 'tail'}
+                  >
+                    {article.title}
+                  </Text>
+                  <Text style={styles.priceOverlay}>{formatPrice()}</Text>
+                </TouchableOpacity>
+                <Text style={styles.brandNameOverlay}>{article.brand?.name || 'Unknown Brand'}</Text>
+              </LinearGradient>
+            </View>
+
+          {/* Bottom section */}
+          <View style={styles.bottomSection}>
+            <View style={styles.categoryRow}>
+              <Text style={styles.categoryText}>{article.category}</Text>
+              <TouchableOpacity onPress={handleSave}>
+                <Icon 
+                  name={article.is_saved ? "bookmark" : "bookmark-outline"} 
+                  size={20} 
+                  color="#000000" 
+                />
+              </TouchableOpacity>
             </View>
             
-            <TouchableOpacity style={styles.visitButton} onPress={handleExternalLink}>
-              <Text style={styles.visitButtonText}>Visit</Text>
-              <Icon name="arrow-forward" size={14} color="#000000" />
-            </TouchableOpacity>
+            <Text style={styles.description} numberOfLines={2}>
+              {article.description || 'No description available...'}
+            </Text>
+            
+            <View style={styles.tagsRow}>
+              <View style={styles.tagsContainer}>
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{article.category}</Text>
+                </View>
+                {article.brand?.name && (
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{article.brand.name}</Text>
+                  </View>
+                )}
+              </View>
+              
+              <TouchableOpacity style={styles.visitButton} onPress={handleExternalLink}>
+                <Text style={styles.visitButtonText}>Visit</Text>
+                <Icon name="arrow-forward" size={14} color="#000000" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </>
   );
 };
 

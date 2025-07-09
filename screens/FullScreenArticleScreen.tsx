@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   Animated,
   StatusBar,
-  Linking,
   Alert,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -106,9 +106,17 @@ export const FullScreenArticleScreen: React.FC<any> = ({
 
   const handleExternalLink = (article: Article) => {
     if (article.purchase_url) {
-      Linking.openURL(article.purchase_url).catch(() => {
-        Alert.alert('Error', 'Could not open the website');
+      console.log('Opening URL directly in external browser:', article.purchase_url);
+      Linking.openURL(article.purchase_url).catch(err => {
+        console.error('Failed to open URL in external browser:', err);
+        Alert.alert('Error', 'Unable to open the link. Please try again later.');
       });
+    } else {
+      Alert.alert(
+        'No Purchase Link',
+        'This article doesn\'t have a purchase link available.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -288,29 +296,31 @@ export const FullScreenArticleScreen: React.FC<any> = ({
   }).current;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={articles}
-        renderItem={renderArticle}
-        keyExtractor={(item) => item.id}
-        pagingEnabled
-        showsVerticalScrollIndicator={false}
-        snapToInterval={height}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        initialScrollIndex={initialIndex}
-        getItemLayout={(_, index) => ({
-          length: height,
-          offset: height * index,
-          index,
-        })}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        removeClippedSubviews={false}
-        contentInsetAdjustmentBehavior="never" // Prevents safe area from affecting content
-      />
-    </SafeAreaView>
+    <>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          ref={flatListRef}
+          data={articles}
+          renderItem={renderArticle}
+          keyExtractor={(item) => item.id}
+          pagingEnabled
+          showsVerticalScrollIndicator={false}
+          snapToInterval={height}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          initialScrollIndex={initialIndex}
+          getItemLayout={(_, index) => ({
+            length: height,
+            offset: height * index,
+            index,
+          })}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          removeClippedSubviews={false}
+          contentInsetAdjustmentBehavior="never" // Prevents safe area from affecting content
+        />
+      </SafeAreaView>
+    </>
   );
 };
 

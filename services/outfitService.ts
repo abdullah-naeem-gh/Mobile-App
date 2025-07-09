@@ -215,8 +215,12 @@ class OutfitService {
           outfit_articles(
             x_position,
             y_position,
-            articles(id, title, price, currency, image_urls)
-          )
+            articles(id, title, price, currency, image_urls, purchase_url)
+          ),
+          likes:likes!likes_outfit_id_fkey(user_id),
+          saves:saves!saves_outfit_id_fkey(user_id),
+          likes_count:likes!likes_outfit_id_fkey(count),
+          saves_count:saves!saves_outfit_id_fkey(count)
         `)
         .eq('is_public', true)
         .order('created_at', { ascending: false });
@@ -247,53 +251,41 @@ class OutfitService {
         return { success: false, error: error.message };
       }
 
-      // Get user's likes and saves if currentUserId is provided
-      let userLikes: string[] = [];
-      let userSaves: string[] = [];
-
-      if (filters.currentUserId && data && data.length > 0) {
-        const outfitIds = data.map(outfit => outfit.id);
-
-        // Get user's likes
-        const { data: likesData } = await supabase
-          .from('likes')
-          .select('outfit_id')
-          .eq('user_id', filters.currentUserId)
-          .in('outfit_id', outfitIds);
-
-        userLikes = likesData?.map(like => like.outfit_id) || [];
-
-        // Get user's saves
-        const { data: savesData } = await supabase
-          .from('saves')
-          .select('outfit_id')
-          .eq('user_id', filters.currentUserId)
-          .in('outfit_id', outfitIds);
-
-        userSaves = savesData?.map(save => save.outfit_id) || [];
-      }
-
       // Transform data to match OutfitCard interface
-      const transformedData = data?.map(outfit => ({
-        id: outfit.id,
-        image_urls: [outfit.image_url], // Convert single image_url to array format
-        description: outfit.description,
-        user: outfit.users ? {
-          id: outfit.users.id,
-          username: outfit.users.username,
-          profile_image_url: outfit.users.profile_pic_url,
-        } : outfit.brands ? {
-          id: outfit.brands.id,
-          username: outfit.brands.name, // Use brand name as username for display
-          profile_image_url: outfit.brands.logo_url,
-        } : null,
-        likes_count: outfit.likes_count || 0,
-        saves_count: outfit.saves_count || 0,
-        is_liked: userLikes.includes(outfit.id),
-        is_saved: userSaves.includes(outfit.id),
-        created_at: outfit.created_at,
-        outfit_articles: outfit.outfit_articles || [],
-      })) || [];
+      const transformedData = data?.map(outfit => {
+        // Get actual counts from the aggregated data
+        const actualLikesCount = outfit.likes_count?.[0]?.count || 0;
+        const actualSavesCount = outfit.saves_count?.[0]?.count || 0;
+        
+        // Clean up purchase URLs in outfit articles
+        const cleanedOutfitArticles = outfit.outfit_articles?.map((outfitArticle: any) => {
+          return {
+            ...outfitArticle,
+            articles: outfitArticle.articles
+          };
+        }) || [];
+        
+        return {
+          id: outfit.id,
+          image_urls: [outfit.image_url], // Convert single image_url to array format
+          description: outfit.description,
+          user: outfit.users ? {
+            id: outfit.users.id,
+            username: outfit.users.username,
+            profile_image_url: outfit.users.profile_pic_url,
+          } : outfit.brands ? {
+            id: outfit.brands.id,
+            username: outfit.brands.name, // Use brand name as username for display
+            profile_image_url: outfit.brands.logo_url,
+          } : null,
+          likes_count: actualLikesCount,
+          saves_count: actualSavesCount,
+          is_liked: filters.currentUserId ? outfit.likes.some((like: any) => like.user_id === filters.currentUserId) : false,
+          is_saved: filters.currentUserId ? outfit.saves.some((save: any) => save.user_id === filters.currentUserId) : false,
+          created_at: outfit.created_at,
+          outfit_articles: cleanedOutfitArticles,
+        };
+      }) || [];
 
       return { success: true, data: transformedData };
     } catch (error) {
@@ -465,6 +457,156 @@ class OutfitService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Toggle like/unlike an outfit
+   */
+  async toggleLike(outfitId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('outfit_id', outfitId)
+        .single();
+
+      if (existingLike) {
+        // Unlike
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('outfit_id', outfitId);
+        
+        if (error) throw error;
+
+        // Update likes count by decrementing
+        const { data: currentOutfit } = await supabase
+          .from('outfits')
+          .select('likes_count')
+          .eq('id', outfitId)
+          .single();
+
+        if (currentOutfit) {
+          await supabase
+            .from('outfits')
+            .update({ likes_count: Math.max(0, (currentOutfit.likes_count || 0) - 1) })
+            .eq('id', outfitId);
+        }
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('likes')
+          .insert({
+            user_id: user.id,
+            outfit_id: outfitId
+          });
+        
+        if (error) throw error;
+
+        // Update likes count by incrementing
+        const { data: currentOutfit } = await supabase
+          .from('outfits')
+          .select('likes_count')
+          .eq('id', outfitId)
+          .single();
+
+        if (currentOutfit) {
+          await supabase
+            .from('outfits')
+            .update({ likes_count: (currentOutfit.likes_count || 0) + 1 })
+            .eq('id', outfitId);
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error toggling outfit like:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to toggle like' 
+      };
+    }
+  }
+
+  /**
+   * Toggle save/unsave an outfit
+   */
+  async toggleSave(outfitId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Check if already saved
+      const { data: existingSave } = await supabase
+        .from('saves')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('outfit_id', outfitId)
+        .single();
+
+      if (existingSave) {
+        // Unsave
+        const { error } = await supabase
+          .from('saves')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('outfit_id', outfitId);
+        
+        if (error) throw error;
+
+        // Update saves count by decrementing
+        const { data: currentOutfit } = await supabase
+          .from('outfits')
+          .select('saves_count')
+          .eq('id', outfitId)
+          .single();
+
+        if (currentOutfit) {
+          await supabase
+            .from('outfits')
+            .update({ saves_count: Math.max(0, (currentOutfit.saves_count || 0) - 1) })
+            .eq('id', outfitId);
+        }
+      } else {
+        // Save
+        const { error } = await supabase
+          .from('saves')
+          .insert({
+            user_id: user.id,
+            outfit_id: outfitId
+          });
+        
+        if (error) throw error;
+
+        // Update saves count by incrementing
+        const { data: currentOutfit } = await supabase
+          .from('outfits')
+          .select('saves_count')
+          .eq('id', outfitId)
+          .single();
+
+        if (currentOutfit) {
+          await supabase
+            .from('outfits')
+            .update({ saves_count: (currentOutfit.saves_count || 0) + 1 })
+            .eq('id', outfitId);
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error toggling outfit save:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to toggle save' 
       };
     }
   }

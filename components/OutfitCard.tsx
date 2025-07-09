@@ -8,6 +8,8 @@ import {
   Dimensions,
   ActivityIndicator,
   Animated,
+  Alert,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -51,6 +53,7 @@ interface Outfit {
       price?: number;
       currency?: string;
       image_urls?: string[];
+      purchase_url?: string;
     };
   }[];
 }
@@ -106,6 +109,27 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
     return '2h ago';
   };
 
+  const handleArticleClick = (article: any) => {
+    console.log('=== Article clicked ===');
+    console.log('Article:', article);
+    console.log('Purchase URL:', article.purchase_url);
+    
+    if (article.purchase_url) {
+      console.log('Opening URL directly in external browser:', article.purchase_url);
+      Linking.openURL(article.purchase_url).catch(err => {
+        console.error('Failed to open URL in external browser:', err);
+        Alert.alert('Error', 'Unable to open the link. Please try again later.');
+      });
+    } else {
+      console.log('No purchase URL available for article:', article.title);
+      Alert.alert(
+        'No Purchase Link',
+        'This article doesn\'t have a purchase link available.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.cardContent}>
@@ -124,7 +148,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 size={24} 
                 color={outfit.is_liked ? "#ff3040" : "#000000"} 
               />
-              <Text style={styles.likeCount}>{outfit.likes_count}</Text>
+              <Text style={styles.likeCount}>{outfit.likes_count || 0}</Text>
             </TouchableOpacity>
 
             {/* Loading state */}
@@ -161,7 +185,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 outfitArticles={outfit.outfit_articles}
                 showCards={true}
                 onTagPress={(article) => {
-                  // Handle tag press - could navigate to article details
+                  handleArticleClick(article.articles);
                 }}
               />
             )}

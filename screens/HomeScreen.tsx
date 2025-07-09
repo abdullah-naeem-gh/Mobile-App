@@ -9,12 +9,12 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
-  Linking,
   Dimensions,
   Image,
   Platform,
   StatusBar,
   Animated,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -241,21 +241,11 @@ export const HomeScreen: React.FC = () => {
 
   const handleExternalLink = (article: Article) => {
     if (article.purchase_url) {
-      Alert.alert(
-        'View Article',
-        `Open ${article.title} on ${article.brand?.name || 'brand'} website?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Open', 
-            onPress: () => {
-              Linking.openURL(article.purchase_url!).catch(() => {
-                Alert.alert('Error', 'Could not open the website');
-              });
-            }
-          }
-        ]
-      );
+      console.log('Opening URL directly in external browser:', article.purchase_url);
+      Linking.openURL(article.purchase_url).catch(err => {
+        console.error('Failed to open URL in external browser:', err);
+        Alert.alert('Error', 'Unable to open the link. Please try again later.');
+      });
     } else {
       Alert.alert(
         article.title,
@@ -345,7 +335,7 @@ export const HomeScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           snapToInterval={height}
           snapToAlignment="start"
-          decelerationRate={0.95} // Slower deceleration for smoother feel
+          decelerationRate={Platform.OS === 'ios' ? 0.95 : 'fast'} // Platform-specific deceleration
           bounces={false}
           bouncesZoom={false}
           contentContainerStyle={styles.listContainer}

@@ -17,6 +17,7 @@ interface OutfitArticle {
     price?: number;
     currency?: string;
     image_urls?: string[];
+    purchase_url?: string;
   };
 }
 
@@ -45,7 +46,7 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
     const isTop = y_position > 50;
 
     return (
-      <View
+      <TouchableOpacity
         key={`card-${articles.id}`}
         style={[
           styles.tagCard,
@@ -59,6 +60,9 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
             bottom: isTop ? `${100 - y_position + 2}%` : undefined, // Reduced offset to 2%
           } as ViewStyle,
         ]}
+        onPress={() => onTagPress && onTagPress(outfitArticle)}
+        disabled={!onTagPress}
+        activeOpacity={0.8}
       >
         <View style={styles.tagCardContent}>
           <Text style={styles.tagCardTitle} numberOfLines={1}>
@@ -77,7 +81,7 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
             isTop ? styles.tagCardArrowBottom : styles.tagCardArrowTop,
           ]}
         />
-      </View>
+      </TouchableOpacity>
     );
   };
 

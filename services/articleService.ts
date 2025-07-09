@@ -29,7 +29,9 @@ export const articleService = {
           *,
           brand:brands(*),
           likes:likes(user_id),
-          saves:saves(user_id)
+          saves:saves(user_id),
+          likes_count:likes!likes_article_id_fkey(count),
+          saves_count:saves!saves_article_id_fkey(count)
         `)
         .eq('is_available', true)
         .order('created_at', { ascending: false })
@@ -61,12 +63,20 @@ export const articleService = {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
-      // Process articles to include like/save status
-      const articles: Article[] = (data || []).map(article => ({
-        ...article,
-        is_liked: userId ? article.likes.some((like: any) => like.user_id === userId) : false,
-        is_saved: userId ? article.saves.some((save: any) => save.user_id === userId) : false,
-      }));
+      // Process articles to include like/save status and actual counts
+      const articles: Article[] = (data || []).map(article => {
+        // Get actual counts from the aggregated data
+        const actualLikesCount = article.likes_count?.[0]?.count || 0;
+        const actualSavesCount = article.saves_count?.[0]?.count || 0;
+        
+        return {
+          ...article,
+          is_liked: userId ? article.likes.some((like: any) => like.user_id === userId) : false,
+          is_saved: userId ? article.saves.some((save: any) => save.user_id === userId) : false,
+          likes_count: actualLikesCount,
+          saves_count: actualSavesCount,
+        };
+      });
 
       return { success: true, data: articles };
     } catch (error) {
