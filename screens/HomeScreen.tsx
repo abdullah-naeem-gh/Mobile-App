@@ -169,7 +169,8 @@ export const HomeScreen: React.FC = () => {
 
   const hasActiveFilters = filters.search || filters.gender || filters.category || 
                           (filters.colors && filters.colors.length > 0) || 
-                          (filters.sizes && filters.sizes.length > 0);
+                          (filters.sizes && filters.sizes.length > 0) ||
+                          filters.priceRange;
 
   const handleLikeChange = async (articleId: string, isLiked: boolean) => {
     // Optimistically update UI

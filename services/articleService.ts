@@ -8,6 +8,10 @@ export interface ArticleFilters {
   search?: string;
   colors?: string[];
   sizes?: string[];
+  priceRange?: {
+    min: number;
+    max: number;
+  };
   limit?: number;
 }
 
@@ -54,6 +58,12 @@ export const articleService = {
       }
       if (filters.sizes && filters.sizes.length > 0) {
         query = query.overlaps('sizes', filters.sizes);
+      }
+      if (filters.priceRange) {
+        // Only filter by price if both min and max are provided and different from default
+        if (filters.priceRange.min !== undefined && filters.priceRange.max !== undefined) {
+          query = query.gte('price', filters.priceRange.min).lte('price', filters.priceRange.max);
+        }
       }
 
       const { data, error } = await query;
@@ -311,6 +321,42 @@ export const articleService = {
       return { 
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch liked articles' 
+      };
+    }
+  },
+
+  /**
+   * Get price range for articles to set slider min/max values
+   */
+  async getPriceRange(): Promise<{ success: boolean; data?: { min: number; max: number }; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('price')
+        .not('price', 'is', null)
+        .eq('is_available', true)
+        .order('price', { ascending: true });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return { success: true, data: { min: 0, max: 100000 } };
+      }
+
+      const prices = data.map(item => item.price).filter(price => price !== null && price !== undefined);
+      if (prices.length === 0) {
+        return { success: true, data: { min: 0, max: 100000 } };
+      }
+
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+
+      return { success: true, data: { min: Math.floor(min), max: Math.ceil(max) } };
+    } catch (error) {
+      console.error('Error fetching price range:', error);
+      return { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch price range' 
       };
     }
   },

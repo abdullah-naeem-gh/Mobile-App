@@ -12,8 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { CategoryType, GenderType } from '../types';
-import { ArticleFilters } from '../services/articleService';
+import { ArticleFilters, articleService } from '../services/articleService';
 
 interface FiltersModalProps {
   visible: boolean;
@@ -49,6 +50,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | undefined>(currentFilters.category);
   const [selectedColors, setSelectedColors] = useState<string[]>(currentFilters.colors || []);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(currentFilters.sizes || []);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
+    min: currentFilters.priceRange?.min || 0,
+    max: currentFilters.priceRange?.max || 100000,
+  });
+  const [dbPriceRange, setDbPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
+  const [priceRangeLoaded, setPriceRangeLoaded] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -58,8 +65,47 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
       setSelectedCategory(currentFilters.category);
       setSelectedColors(currentFilters.colors || []);
       setSelectedSizes(currentFilters.sizes || []);
+      
+      // Load price range from database if not already loaded
+      if (!priceRangeLoaded) {
+        loadPriceRange();
+      }
+      
+      // Set current price range or use db range
+      if (currentFilters.priceRange) {
+        setPriceRange(currentFilters.priceRange);
+      } else if (priceRangeLoaded) {
+        setPriceRange(dbPriceRange);
+      }
     }
-  }, [visible, currentFilters]);
+  }, [visible, currentFilters, priceRangeLoaded, dbPriceRange]);
+
+  const loadPriceRange = async () => {
+    try {
+      const result = await articleService.getPriceRange();
+      if (result.success && result.data) {
+        setDbPriceRange(result.data);
+        if (!currentFilters.priceRange) {
+          setPriceRange(result.data);
+        }
+        setPriceRangeLoaded(true);
+      } else {
+        console.error('Failed to load price range:', result.error);
+        // Set default values if API fails
+        const defaultRange = { min: 0, max: 100000 };
+        setDbPriceRange(defaultRange);
+        setPriceRange(defaultRange);
+        setPriceRangeLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error loading price range:', error);
+      // Set default values on error
+      const defaultRange = { min: 0, max: 100000 };
+      setDbPriceRange(defaultRange);
+      setPriceRange(defaultRange);
+      setPriceRangeLoaded(true);
+    }
+  };
 
   const handleColorToggle = (color: string) => {
     setSelectedColors(prev => 
@@ -84,6 +130,9 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
       category: selectedCategory,
       colors: selectedColors.length > 0 ? selectedColors : undefined,
       sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
+      priceRange: (priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max) 
+        ? priceRange 
+        : undefined,
     };
     onApplyFilters(filters);
     onClose();
@@ -95,10 +144,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
     setSelectedCategory(undefined);
     setSelectedColors([]);
     setSelectedSizes([]);
+    setPriceRange(dbPriceRange);
   };
 
   const hasActiveFilters = searchQuery.trim() || selectedGender || selectedCategory || 
-                          selectedColors.length > 0 || selectedSizes.length > 0;
+                          selectedColors.length > 0 || selectedSizes.length > 0 ||
+                          (priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max);
 
   return (
     <Modal
@@ -143,6 +194,80 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                     <Ionicons name="close-circle" size={20} color="#666" />
                   </TouchableOpacity>
                 )}
+              </View>
+            </View>
+
+            {/* Price Range */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Price Range</Text>
+                {(priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max) && (
+                  <View style={styles.activeFilterIndicator}>
+                    <Text style={styles.activeFilterText}>Active</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.priceRangeContainer}>
+                <View style={styles.priceLabels}>
+                  <Text style={styles.priceLabel}>PKR {priceRange.min.toLocaleString()}</Text>
+                  <Text style={styles.priceLabel}>PKR {priceRange.max.toLocaleString()}</Text>
+                </View>
+                <View style={styles.sliderContainer}>
+                  <Text style={styles.sliderLabel}>Minimum Price</Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={dbPriceRange.min}
+                    maximumValue={priceRange.max}
+                    value={priceRange.min}
+                    onValueChange={(value) => setPriceRange(prev => ({ ...prev, min: Math.round(value) }))}
+                    minimumTrackTintColor="#000000"
+                    maximumTrackTintColor="#e0e0e0"
+                    thumbTintColor="#000000"
+                  />
+                  <Text style={styles.sliderLabel}>Maximum Price</Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={priceRange.min}
+                    maximumValue={dbPriceRange.max}
+                    value={priceRange.max}
+                    onValueChange={(value) => setPriceRange(prev => ({ ...prev, max: Math.round(value) }))}
+                    minimumTrackTintColor="#000000"
+                    maximumTrackTintColor="#e0e0e0"
+                    thumbTintColor="#000000"
+                  />
+                </View>
+                <View style={styles.priceInputContainer}>
+                  <View style={styles.priceInputWrapper}>
+                    <Text style={styles.priceInputLabel}>Min</Text>
+                    <TextInput
+                      style={styles.priceInput}
+                      value={priceRange.min.toString()}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 0;
+                        if (value >= dbPriceRange.min && value <= priceRange.max) {
+                          setPriceRange(prev => ({ ...prev, min: value }));
+                        }
+                      }}
+                      keyboardType="numeric"
+                      placeholder="0"
+                    />
+                  </View>
+                  <View style={styles.priceInputWrapper}>
+                    <Text style={styles.priceInputLabel}>Max</Text>
+                    <TextInput
+                      style={styles.priceInput}
+                      value={priceRange.max.toString()}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 0;
+                        if (value <= dbPriceRange.max && value >= priceRange.min) {
+                          setPriceRange(prev => ({ ...prev, max: value }));
+                        }
+                      }}
+                      keyboardType="numeric"
+                      placeholder="100000"
+                    />
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -340,6 +465,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     letterSpacing: -0.3,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  activeFilterIndicator: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  activeFilterText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -443,4 +585,71 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  priceRangeContainer: {
+    marginTop: 8,
+  },
+  priceLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  priceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  sliderContainer: {
+    marginBottom: 20,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+    marginBottom: 8,
+  },
+  sliderLabel: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  priceInputContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  priceInputWrapper: {
+    flex: 1,
+  },
+  priceInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  priceInput: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#000000',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
 });
+
+/**
+ * FiltersModal Component
+ * 
+ * A comprehensive filtering modal for articles with the following features:
+ * - Search by title/description
+ * - Filter by gender (male, female, unisex)
+ * - Filter by category (tops, bottoms, dresses, etc.)
+ * - Filter by colors (multiple selection)
+ * - Filter by sizes (multiple selection)
+ * - Filter by price range (dual slider + text inputs)
+ * 
+ * The price range filter integrates with Supabase to:
+ * - Fetch actual min/max prices from the database
+ * - Apply price filtering in SQL queries
+ * - Handle edge cases (null prices, empty data)
+ */
