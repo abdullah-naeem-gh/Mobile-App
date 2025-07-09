@@ -14,6 +14,7 @@ import {
   Image,
   Platform,
   StatusBar,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,7 +37,10 @@ export const HomeScreen: React.FC = () => {
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const loadArticles = useCallback(async (
     currentPage: number = 0, 
@@ -97,9 +101,50 @@ export const HomeScreen: React.FC = () => {
     };
   }, []);
 
-  const handleScroll = (event: any) => {
-    // Removed color changing logic - keeping function for potential future use
+  const handleScroll = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    scrollY.setValue(offsetY);
+    
+    // Calculate current index based on scroll position
+    const index = Math.round(offsetY / height);
+    if (index !== currentIndex && index >= 0 && index < articles.length) {
+      setCurrentIndex(index);
+    }
+  }, [currentIndex, articles.length]);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: height,
+    offset: height * index,
+    index,
+  }), []);
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      const newIndex = viewableItems[0].index;
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+      }
+    }
+  }, [currentIndex]);
+
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 60, // Reduced for smoother transitions
+    minimumViewTime: 200, // Increased for more stability
   };
+
+  // Add momentum-based smooth scrolling
+  const handleMomentumScrollEnd = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const index = Math.round(offsetY / height);
+    
+    // Ensure we're properly snapped to a card with gentler correction
+    if (Math.abs(offsetY - (index * height)) > 20) {
+      flatListRef.current?.scrollToOffset({
+        offset: index * height,
+        animated: true,
+      });
+    }
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -220,21 +265,51 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const renderArticle = ({ item }: { item: Article }) => (
-    <ArticleCard
-      article={item}
-      onLikeChange={handleLikeChange}
-      onSaveChange={handleSaveChange}
-    />
-  );
+  const renderArticle = ({ item, index }: { item: Article; index: number }) => {
+    const inputRange = [
+      (index - 1) * height,
+      index * height,
+      (index + 1) * height,
+    ];
+
+    const scale = scrollY.interpolate({
+      inputRange,
+      outputRange: [0.95, 1, 0.95], // Much more subtle scaling
+      extrapolate: 'clamp',
+    });
+
+    const opacity = scrollY.interpolate({
+      inputRange,
+      outputRange: [0.8, 1, 0.8], // More subtle opacity change
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View 
+        style={[
+          styles.articleContainer,
+          {
+            opacity,
+            transform: [{ scale }],
+          }
+        ]}
+      >
+        <ArticleCard
+          article={item}
+          onLikeChange={handleLikeChange}
+          onSaveChange={handleSaveChange}
+        />
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       {/* Platform-specific status bar */}
       <StatusBar 
         barStyle="dark-content" 
-        backgroundColor="#E8D5C4" 
-        translucent={Platform.OS === 'android'}
+        backgroundColor="transparent" 
+        translucent={true}
       />
       
       {/* Static beige background for consistency */}
@@ -262,6 +337,7 @@ export const HomeScreen: React.FC = () => {
         </View>
 
         <FlatList
+          ref={flatListRef}
           data={articles}
           renderItem={renderArticle}
           keyExtractor={(item) => item.id}
@@ -269,12 +345,30 @@ export const HomeScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           snapToInterval={height}
           snapToAlignment="start"
-          decelerationRate="fast"
+          decelerationRate={0.95} // Slower deceleration for smoother feel
+          bounces={false}
+          bouncesZoom={false}
           contentContainerStyle={styles.listContainer}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.1}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { 
+              useNativeDriver: false,
+              listener: handleScroll,
+            }
+          )}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          scrollEventThrottle={16} // Increased for smoother transitions
+          getItemLayout={getItemLayout}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          removeClippedSubviews={Platform.OS === 'android'}
+          maxToRenderPerBatch={1}
+          windowSize={2}
+          initialNumToRender={1}
+          updateCellsBatchingPeriod={100}
+          disableIntervalMomentum={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No articles found</Text>
@@ -298,16 +392,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    ...(Platform.OS === 'android' && {
-      paddingTop: StatusBar.currentHeight || 0,
-    }),
   },
   beigeBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 661,
+    height: Platform.OS === 'ios' ? 670 : 630, // Reduced height to match design - just covers header area
     backgroundColor: '#E8D5C4', // Consistent beige color
     borderBottomLeftRadius: 43,
     borderBottomRightRadius: 43,
@@ -319,17 +410,17 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
+    top: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
+    zIndex: 2000, // Higher z-index to stay above cards
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
+    paddingTop: Platform.OS === 'ios' ? 60 : 50, // Adjust for status bar
+    paddingBottom: 15,
+    backgroundColor: 'rgba(232, 213, 196, 0.95)', // Semi-transparent beige
   },
   title: {
     fontSize: 28,
@@ -363,22 +454,24 @@ const styles = StyleSheet.create({
   activeFilterIconText: {
     color: '#ffffff',
   },
+  articleContainer: {
+    height: height,
+    justifyContent: 'flex-start', // Change to flex-start for manual positioning
+    alignItems: 'center',
+    paddingTop: 0, // Remove padding as we're handling it in ArticleCard
+    paddingHorizontal: 0, // Remove horizontal padding to match design
+  },
   listContainer: {
     flexGrow: 1,
-    // Only add padding for Android, keep iOS as is
-    ...(Platform.OS === 'android' && {
-      paddingTop: 90,
-    }),
+    // No additional padding - cards start right after header
+    paddingTop: 0,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     height: height - 200, // Adjust for header
-    // Only add padding for Android, keep iOS as is
-    ...(Platform.OS === 'android' && {
-      paddingTop: 90,
-    }),
+    paddingTop: 0, // Remove platform-specific padding
   },
   emptyText: {
     fontSize: 18,

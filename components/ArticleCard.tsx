@@ -21,15 +21,19 @@ import { PLATFORM_CONSTANTS } from '../utils/platformUtils';
 const { width, height } = Dimensions.get('window');
 
 // Fixed design dimensions - maintain exact aspect ratio
-const DESIGN_WIDTH = 420; // Increased from 346
-const DESIGN_HEIGHT = 760; // Increased from 588
+const DESIGN_WIDTH = 380; // Increased to match original design better
+const DESIGN_HEIGHT = 680; // Increased to match original design better
 const DESIGN_ASPECT_RATIO = DESIGN_WIDTH / DESIGN_HEIGHT;
 
 // Calculate responsive card dimensions while maintaining design proportions
-const availableWidth = width * 0.85; // Increased from 85% to 95% of screen width
-const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, 1.2); // Allow scaling up to 1.2x beyond design size
+const availableWidth = width * 0.92; // 92% of screen width for larger cards
+const availableHeight = height * 0.68; // 68% of screen height for proper fit
+const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DESIGN_HEIGHT);
 const cardWidth = DESIGN_WIDTH * scaleFactor;
 const cardHeight = DESIGN_HEIGHT * scaleFactor;
+
+// Platform-specific positioning adjustments
+const cardTopOffset = Platform.OS === 'ios' ? 120 : 160; // Slightly more offset for Android to account for different header spacing
 
 // Image container takes most of the card height (about 75% like in design)
 const imageContainerHeight = cardHeight * 0.75;
@@ -50,6 +54,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
   const [isArticleNameExpanded, setIsArticleNameExpanded] = useState(false);
   const imageOpacity = useState(new Animated.Value(0))[0];
+  const cardScale = useState(new Animated.Value(1))[0];
 
   // Process image URL with cache busting parameter
   const imageUrl = useMemo(() => {
@@ -117,10 +122,42 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const handleLike = () => {
+    // Add subtle spring animation feedback
+    Animated.sequence([
+      Animated.spring(cardScale, {
+        toValue: 0.95,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
     onLikeChange(article.id, !article.is_liked);
   };
 
   const handleSave = () => {
+    // Add subtle spring animation feedback
+    Animated.sequence([
+      Animated.spring(cardScale, {
+        toValue: 0.95,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
     onSaveChange(article.id, !article.is_saved);
   };
 
@@ -141,7 +178,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { transform: [{ scale: cardScale }] }]}>
       <View style={styles.cardContent}>
         {/* Article Image with overlay info */}
         <View style={styles.imageContainer}>
@@ -181,7 +218,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     setImageLoading(false);
                     Animated.timing(imageOpacity, {
                       toValue: 1,
-                      duration: 300,
+                      duration: 400, // Slower, smoother fade-in
                       useNativeDriver: true,
                     }).start();
                   }}
@@ -252,7 +289,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -261,9 +298,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     width: width,
     height: height, // Full screen height for reel effect
-    paddingHorizontal: 10, // Reduced padding to accommodate larger cards
+    paddingHorizontal: 0, // Remove padding to allow proper centering
     paddingVertical: 0,
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-start', // Change to flex-start to control positioning manually
+    alignItems: 'center', // Center the card horizontally
+    paddingTop: cardTopOffset, // Add platform-specific top padding
   },
   cardContent: {
     backgroundColor: '#ffffff',
@@ -280,13 +319,13 @@ const styles = StyleSheet.create({
     width: cardWidth, // Responsive width
     height: cardHeight, // Responsive height maintaining aspect ratio
     alignSelf: 'center',
-    marginTop: PLATFORM_CONSTANTS.ARTICLE_CARD_MARGIN_TOP, // Platform-specific positioning
-    marginBottom: 20,
+    marginTop: 0, // Remove negative margin
+    marginBottom: 0, // Remove bottom margin
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: cardHeight * 0.75, // Image takes 75% of card height
+    height: cardHeight * 0.72, // Slightly reduced to give more space for bottom section
     backgroundColor: '#ffffff', // White background like Instagram
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -294,20 +333,20 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 32,
-    height: 32,
+    top: 20,
+    left: 20,
+    width: 36,
+    height: 36,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   likeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 20,
+    right: 20,
     alignItems: 'center',
     zIndex: 10,
   },
@@ -348,7 +387,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    padding: 20,
   },
   articleTitleRow: {
     flexDirection: 'row',
@@ -371,13 +410,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   bottomSection: {
-    padding: 16,
+    padding: 20,
+    flex: 1,
+    justifyContent: 'space-between',
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   categoryText: {
     fontSize: 18,
@@ -388,7 +429,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -402,10 +443,10 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: '#E8D5C4',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 20,
-    marginRight: 8,
+    marginRight: 10,
   },
   tagText: {
     color: '#000000',
@@ -417,10 +458,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 20,
-    marginLeft: 8,
+    marginLeft: 10,
   },
   visitButtonText: {
     color: '#000000',
