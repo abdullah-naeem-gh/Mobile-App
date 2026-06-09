@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -15,6 +14,7 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { pickFullImage, uploadImage, getImageDimensions, calculateOptimalDimensions, takePhoto, pickImage } from '../lib/storage';
@@ -688,9 +688,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    ...(Platform.OS === 'android' && {
-      paddingTop: StatusBar.currentHeight || 0,
-    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -714,7 +711,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
+    paddingTop: 12,
     paddingBottom: 15,
     zIndex: 1000,
   },

@@ -34,7 +34,7 @@ Loaded via `react-native-dotenv` (babel plugin). Types declared in `types/env.d.
 
 ### Entry & Providers
 
-`index.ts` → `App.tsx` wraps the app in `AuthProvider` (from `contexts/AuthContext.tsx`) and `GestureHandlerRootView`, then renders `<AppNavigator />`.
+`index.ts` → `App.tsx` wraps the app in `ErrorBoundary` → `SafeAreaProvider` → `AuthProvider`, then renders `<AppNavigator />`.
 
 ### Auth & Role System
 
@@ -91,8 +91,9 @@ Defined in `types/index.ts`:
 
 ### Platform Considerations
 
-- Use `PlatformStatusBar` and `AndroidSafeArea` components instead of raw `StatusBar`/`SafeAreaView` for consistent cross-platform behaviour.
-- Android uses edge-to-edge mode; safe area insets must be accounted for manually in some screens.
+- Android runs in **edge-to-edge** mode (`edgeToEdgeEnabled: true` in `app.json`), so `StatusBar.currentHeight` and the legacy `SafeAreaView` from `react-native` are unreliable. **Always** import `SafeAreaView` / `useSafeAreaInsets` from `react-native-safe-area-context` instead — never from `react-native`, and never hardcode status-bar offsets with `Platform.OS` forks.
+- The bottom tab bar in `navigation/AppNavigator.tsx` sizes itself with `useSafeAreaInsets()` to clear the Android gesture-nav bar and iOS home indicator.
+- `components/AndroidSafeArea.tsx` is a legacy unused component; do not use it for new work.
 - The app is locked to **portrait** orientation (set in `app.json`).
 
 ### UI / Theming

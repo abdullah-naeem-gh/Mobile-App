@@ -32,8 +32,9 @@ const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DE
 const cardWidth = DESIGN_WIDTH * scaleFactor;
 const cardHeight = DESIGN_HEIGHT * scaleFactor;
 
-// Platform-specific positioning adjustments
-const cardTopOffset = Platform.OS === 'ios' ? 120 : 160; // Slightly more offset for Android to account for different header spacing
+// Offset below the floating header; the status bar inset is handled by the
+// screen's SafeAreaView on both platforms, so no platform fork is needed here
+const cardTopOffset = 120;
 
 // Image container takes most of the card height (about 75% like in design)
 const imageContainerHeight = cardHeight * 0.75;

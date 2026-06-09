@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   ScrollView,
@@ -16,6 +15,7 @@ import {
   Animated,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { ArticleCard } from '../components/ArticleCard';
@@ -409,7 +409,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'ios' ? 60 : 50, // Adjust for status bar
+    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
+    paddingTop: 12,
     paddingBottom: 15,
     backgroundColor: 'rgba(232, 213, 196, 0.95)', // Semi-transparent beige
   },

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { OutfitCard } from '../components/OutfitCard';
 import { outfitService } from '../services/outfitService';
@@ -218,9 +218,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    ...(Platform.OS === 'android' && {
-      paddingTop: StatusBar.currentHeight || 0,
-    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -239,7 +236,7 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0),
+    top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
@@ -247,7 +244,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
+    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
+    paddingTop: 12,
     paddingBottom: 12,
     backgroundColor: 'transparent',
   },
