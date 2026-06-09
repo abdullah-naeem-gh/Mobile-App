@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   ActivityIndicator,
   ScrollView,
@@ -15,6 +14,7 @@ import {
   Animated,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -210,9 +210,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    ...(Platform.OS === 'android' && {
-      paddingTop: StatusBar.currentHeight || 0,
-    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -235,7 +232,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
+    paddingTop: 12,
     paddingBottom: 30,
     zIndex: 1000,
   },

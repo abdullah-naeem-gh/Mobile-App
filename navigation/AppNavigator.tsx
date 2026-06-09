@@ -13,6 +13,7 @@ import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const Stack = createNativeStackNavigator();
@@ -58,7 +59,10 @@ const ProfileStack = () => (
   </Stack.Navigator>
 );
 
-const MainTabs = () => (
+const MainTabs = () => {
+  const insets = useSafeAreaInsets();
+
+  return (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
@@ -67,8 +71,9 @@ const MainTabs = () => (
         borderTopColor: '#e0e0e0',
         borderTopWidth: 1,
         paddingTop: 8,
-        paddingBottom: 8,
-        height: 80,
+        // Keep the tab bar clear of the Android gesture/nav bar and the iOS home indicator
+        paddingBottom: Math.max(insets.bottom, 8),
+        height: 64 + Math.max(insets.bottom, 8),
       },
       tabBarActiveTintColor: '#000000',
       tabBarInactiveTintColor: '#9e9e9e',
@@ -116,7 +121,8 @@ const MainTabs = () => (
       }}
     />
   </Tab.Navigator>
-);
+  );
+};
 
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>

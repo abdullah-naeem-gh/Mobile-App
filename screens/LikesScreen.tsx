@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Image,
@@ -15,6 +14,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { likesService, LikedItem } from '../services/likesService';
@@ -346,9 +346,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    ...(Platform.OS === 'android' && {
-      paddingTop: StatusBar.currentHeight || 0,
-    }),
   },
   beigeBackground: {
     position: 'absolute',
@@ -372,7 +369,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
+    paddingTop: 12,
     paddingBottom: 20,
     zIndex: 1000,
   },
@@ -394,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 100 : 80,
+    paddingTop: 80,
   },
   loadingText: {
     color: '#000000',
