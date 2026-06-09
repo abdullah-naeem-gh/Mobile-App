@@ -480,22 +480,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             >
               <Text style={styles.secondaryButtonText}>I already have an account</Text>
             </TouchableOpacity>
-
-            {/* Feature highlights */}
-            <View style={styles.featuresContainer}>
-              <View style={styles.featureItem}>
-                <Icon name="heart-outline" size={16} color="#666666" />
-                <Text style={styles.featureText}>Like & Save Outfits</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Icon name="people-outline" size={16} color="#666666" />
-                <Text style={styles.featureText}>Follow Brands</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Icon name="pricetag-outline" size={16} color="#666666" />
-                <Text style={styles.featureText}>Shop Articles</Text>
-              </View>
-            </View>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -513,10 +497,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: height * 0.4,
+    bottom: 0,
     backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 43,
-    borderBottomRightRadius: 43,
   },
   safeArea: {
     flex: 1,
@@ -657,59 +639,31 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   primaryButton: {
-    backgroundColor: '#E8D5C4',
-    paddingVertical: 16,
+    backgroundColor: 'rgba(230,166,107,0.77)',
+    height: 60,
     paddingHorizontal: 24,
-    borderRadius: 16,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   primaryButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#000000',
     marginRight: 8,
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
+    backgroundColor: '#FFF8F8',
+    height: 60,
     paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8D5C4',
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#666666',
-  },
-  featuresContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 24,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  featureItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  featureText: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '400',
+    color: '#000000',
   },
 });
