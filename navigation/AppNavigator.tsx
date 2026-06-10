@@ -11,6 +11,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { SavedScreen } from '../screens/SavedScreen';
+import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +55,17 @@ const PostStack = () => (
   </Stack.Navigator>
 );
 
+const SavedScreenWrapper = () => {
+  const navigation = useNavigation();
+  return <SavedScreen onBack={() => navigation.goBack()} />;
+};
+
+const SavedStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="SavedScreen" component={SavedScreenWrapper} />
+  </Stack.Navigator>
+);
+
 const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
@@ -84,39 +97,48 @@ const MainTabs = () => {
       },
     }}
   >
-    <Tab.Screen 
-      name="Articles" 
+    <Tab.Screen
+      name="Articles"
       component={HomeStack}
       options={{
         tabBarIcon: ({ color, size, focused }) => (
-          <Icon name={focused ? "pricetag" : "pricetag-outline"} size={24} color={color} />
+          <Icon name={focused ? "home" : "home-outline"} size={26} color={color} />
         ),
       }}
     />
-    <Tab.Screen 
-      name="Outfits" 
+    <Tab.Screen
+      name="Outfits"
       component={OutfitStack}
       options={{
         tabBarIcon: ({ color, size, focused }) => (
-          <Icon name={focused ? "shirt" : "shirt-outline"} size={24} color={color} />
+          <Icon name={focused ? "shirt" : "shirt-outline"} size={26} color={color} />
         ),
       }}
     />
-    <Tab.Screen 
-      name="Post" 
+    <Tab.Screen
+      name="Post"
       component={PostStack}
       options={{
         tabBarIcon: ({ color, size, focused }) => (
-          <Icon name={focused ? "add-circle" : "add-circle-outline"} size={24} color={color} />
+          <Icon name={focused ? "add-circle" : "add-circle-outline"} size={26} color={color} />
         ),
       }}
     />
-    <Tab.Screen 
-      name="Profile" 
+    <Tab.Screen
+      name="Saved"
+      component={SavedStack}
+      options={{
+        tabBarIcon: ({ color, size, focused }) => (
+          <Icon name={focused ? "bookmark" : "bookmark-outline"} size={26} color={color} />
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Profile"
       component={ProfileStack}
       options={{
         tabBarIcon: ({ color, size, focused }) => (
-          <Icon name={focused ? "person" : "person-outline"} size={24} color={color} />
+          <Icon name={focused ? "person-circle" : "person-circle-outline"} size={26} color={color} />
         ),
       }}
     />

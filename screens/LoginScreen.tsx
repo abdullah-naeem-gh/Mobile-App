@@ -131,13 +131,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputWrapper}>
-                    <Icon name="mail-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
                       onChangeText={(text) => {
                         setEmail(text);
-                        if (error) setError(null); // Clear error when user starts typing
+                        if (error) setError(null);
                       }}
                       placeholder="Enter your email"
                       placeholderTextColor="#999999"
@@ -150,13 +149,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputWrapper}>
-                    <Icon name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={password}
                       onChangeText={(text) => {
                         setPassword(text);
-                        if (error) setError(null); // Clear error when user starts typing
+                        if (error) setError(null);
                       }}
                       placeholder="Enter your password"
                       placeholderTextColor="#999999"
@@ -309,12 +307,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    paddingHorizontal: 16,
-    height: 56,
+    backgroundColor: '#F5F3F3',
+    borderRadius: 15,
+    paddingHorizontal: 25,
+    height: 60,
   },
   inputIcon: {
     marginRight: 12,
@@ -343,26 +339,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loginButton: {
-    backgroundColor: '#E8D5C4',
-    paddingVertical: 16,
-    borderRadius: 16,
+    backgroundColor: 'rgba(230,166,107,0.77)',
+    height: 60,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
     gap: 8,
   },
   loginButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#000000',
   },
   switchContainer: {

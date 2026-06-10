@@ -170,11 +170,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                       onPress={() => setRole('consumer')}
                       activeOpacity={0.8}
                     >
-                      <Icon 
-                        name="person-outline" 
-                        size={20} 
-                        color={role === 'consumer' ? '#000000' : '#666666'} 
-                      />
                       <Text
                         style={[
                           styles.roleOptionText,
@@ -192,11 +187,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                       onPress={() => setRole('brand')}
                       activeOpacity={0.8}
                     >
-                      <Icon 
-                        name="storefront-outline" 
-                        size={20} 
-                        color={role === 'brand' ? '#000000' : '#666666'} 
-                      />
                       <Text
                         style={[
                           styles.roleOptionText,
@@ -212,7 +202,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputWrapper}>
-                    <Icon name="mail-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -231,7 +220,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputWrapper}>
-                    <Icon name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={password}
@@ -249,7 +237,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.inputWrapper}>
-                    <Icon name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={confirmPassword}
@@ -403,12 +390,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    paddingHorizontal: 16,
-    height: 56,
+    backgroundColor: '#F5F3F3',
+    borderRadius: 15,
+    paddingHorizontal: 25,
+    height: 60,
   },
   inputIcon: {
     marginRight: 12,
@@ -445,49 +430,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    height: 48,
     paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    backgroundColor: '#f8f8f8',
+    borderRadius: 15,
+    backgroundColor: '#F3F3F3',
     gap: 8,
   },
   roleOptionSelected: {
-    borderColor: '#E8D5C4',
-    backgroundColor: '#E8D5C4',
+    backgroundColor: '#1E1E1E',
   },
   roleOptionText: {
     fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
+    color: '#000000',
+    fontWeight: '400',
     textAlign: 'center',
   },
   roleOptionTextSelected: {
-    color: '#000000',
-    fontWeight: '600',
+    color: '#ffffff',
+    fontWeight: '400',
   },
   signUpButton: {
-    backgroundColor: '#E8D5C4',
-    paddingVertical: 16,
-    borderRadius: 16,
+    backgroundColor: 'rgba(230,166,107,0.77)',
+    height: 60,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
     gap: 8,
   },
   signUpButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#000000',
   },
   switchContainer: {

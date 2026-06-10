@@ -272,18 +272,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <View style={styles.categoryRow}>
               <Text style={styles.categoryText}>{article.category}</Text>
               <TouchableOpacity onPress={handleSave}>
-                <Icon 
-                  name={article.is_saved ? "bookmark" : "bookmark-outline"} 
-                  size={20} 
-                  color="#000000" 
+                <Icon
+                  name={article.is_saved ? "bookmark" : "bookmark-outline"}
+                  size={20}
+                  color="#000000"
                 />
               </TouchableOpacity>
             </View>
-            
-            <Text style={styles.description} numberOfLines={2}>
-              {article.description || 'No description available...'}
-            </Text>
-            
+
             <View style={styles.tagsRow}>
               <View style={styles.tagsContainer}>
                 <View style={styles.tag}>
@@ -295,7 +291,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </View>
                 )}
               </View>
-              
+
               <TouchableOpacity style={styles.visitButton} onPress={handleExternalLink}>
                 <Text style={styles.visitButtonText}>Visit</Text>
                 <Icon name="arrow-forward" size={14} color="#000000" />
@@ -440,12 +436,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  description: {
-    color: '#666666',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
   tagsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -457,16 +447,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tag: {
-    backgroundColor: '#E8D5C4',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 10,
+    backgroundColor: '#E7CDB5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    marginRight: 8,
   },
   tagText: {
     color: '#000000',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '300',
   },
   visitButton: {
     backgroundColor: '#E8A853',
