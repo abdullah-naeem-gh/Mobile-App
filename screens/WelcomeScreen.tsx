@@ -1,487 +1,115 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Animated,
-  Image,
-} from 'react-native';
+// WelcomeScreen — first-run landing. Beige full-bleed with two floating
+// decorative cards, the brand mark up top, and the headline + CTAs anchored
+// to the bottom. Layout is responsive (positions derive from useResponsive)
+// and safe-area aware; no hardcoded 390-based offsets.
+
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
-
-const { width, height } = Dimensions.get('window');
+import { Button } from '../components/ui';
+import { colors, spacing, radius, fontFamily, shadows } from '../theme';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface WelcomeScreenProps {
-  navigation: any;
+  navigation: { navigate: (screen: 'Login' | 'SignUp') => void };
 }
 
-const AnimatedOutfitCard = ({ delay = 0, style }: { delay?: number; style?: any }) => {
-  const translateY = useRef(new Animated.Value(100)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.3)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
+// A single decorative placeholder card that drifts gently up and down.
+const FloatingCard: React.FC<{
+  style: object;
+  delay: number;
+  rotate: string;
+}> = ({ style, delay, rotate }) => {
+  const drift = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Entrance animation
-      Animated.parallel([
-        Animated.spring(translateY, {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(drift, {
+          toValue: 1,
+          duration: 3000,
+          delay,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(drift, {
           toValue: 0,
-          tension: 50,
-          friction: 8,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(opacity, {
-          toValue: 0.8,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Continuous floating animation
-        Animated.loop(
-          Animated.parallel([
-            Animated.sequence([
-              Animated.timing(translateY, {
-                toValue: -15,
-                duration: 4000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateY, {
-                toValue: 0,
-                duration: 4000,
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(translateX, {
-                toValue: 8,
-                duration: 3000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateX, {
-                toValue: -8,
-                duration: 6000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateX, {
-                toValue: 0,
-                duration: 3000,
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.loop(
-              Animated.timing(rotate, {
-                toValue: 1,
-                duration: 15000,
-                useNativeDriver: true,
-              })
-            ),
-          ])
-        ).start();
-      });
-    }, delay);
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [drift, delay]);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '5deg'],
-  });
+  const translateY = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -12] });
 
   return (
     <Animated.View
-      style={[
-        style,
-        {
-          transform: [
-            { translateY },
-            { translateX },
-            { scale },
-            { rotate: rotateInterpolate },
-          ],
-          opacity,
-        },
-      ]}
-    >
-      <View style={styles.mockOutfitCard}>
-        <View style={styles.mockImage} />
-        <View style={styles.mockCardContent}>
-          <View style={styles.mockUserRow}>
-            <View style={styles.mockAvatar} />
-            <View style={styles.mockUserInfo}>
-              <View style={styles.mockUsername} />
-              <View style={styles.mockTimestamp} />
-            </View>
-            <View style={styles.mockHeartIcon}>
-              <Icon name="heart-outline" size={16} color="#666666" />
-            </View>
-          </View>
-        </View>
-      </View>
-    </Animated.View>
-  );
-};
-
-const FloatingIcon = ({ iconName, delay = 0, style }: { iconName: React.ComponentProps<typeof Icon>['name']; delay?: number; style?: any }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Initial entrance animation
-      Animated.parallel([
-        Animated.timing(scale, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.8,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Start continuous floating animation
-        Animated.loop(
-          Animated.parallel([
-            Animated.sequence([
-              Animated.timing(translateY, {
-                toValue: -20,
-                duration: 3000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateY, {
-                toValue: 0,
-                duration: 3000,
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.sequence([
-              Animated.timing(translateX, {
-                toValue: 10,
-                duration: 2000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateX, {
-                toValue: -10,
-                duration: 4000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(translateX, {
-                toValue: 0,
-                duration: 2000,
-                useNativeDriver: true,
-              }),
-            ]),
-            Animated.loop(
-              Animated.timing(rotate, {
-                toValue: 1,
-                duration: 8000,
-                useNativeDriver: true,
-              })
-            ),
-          ])
-        ).start();
-      });
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          transform: [
-            { translateY },
-            { translateX },
-            { rotate: rotateInterpolate },
-            { scale },
-          ],
-          opacity,
-        },
-      ]}
-    >
-      <Icon name={iconName} size={28} color="#E8D5C4" />
-    </Animated.View>
+      pointerEvents="none"
+      style={[styles.floatingCard, style, { transform: [{ rotate }, { translateY }] }]}
+    />
   );
 };
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.5)).current;
-  const logoPulse = useRef(new Animated.Value(1)).current;
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(50)).current;
-  const titleScale = useRef(new Animated.Value(0.8)).current;
-  const subtitleOpacity = useRef(new Animated.Value(0)).current;
-  const subtitleTranslateY = useRef(new Animated.Value(30)).current;
-  const buttonsOpacity = useRef(new Animated.Value(0)).current;
-  const buttonsTranslateY = useRef(new Animated.Value(50)).current;
-  const buttonScale = useRef(new Animated.Value(0.8)).current;
-  const backgroundPulse = useRef(new Animated.Value(1)).current;
+  const { width, height } = useResponsive();
+  const enter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Background breathing animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(backgroundPulse, {
-          toValue: 1.02,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backgroundPulse, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 600,
+      delay: 200,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [enter]);
 
-    // Logo animation with pulse
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Start logo pulse animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(logoPulse, {
-            toValue: 1.05,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(logoPulse, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    });
-
-    // Title animation
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.spring(titleTranslateY, {
-          toValue: 0,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(titleScale, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 800);
-
-    // Subtitle animation
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(subtitleOpacity, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.spring(subtitleTranslateY, {
-          toValue: 0,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 1400);
-
-    // Buttons animation
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(buttonsOpacity, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.spring(buttonsTranslateY, {
-          toValue: 0,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(buttonScale, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 2000);
-  }, []);
+  const contentTranslate = enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
 
   return (
     <View style={styles.container}>
-      {/* Beige background matching other screens with breathing animation */}
-      <Animated.View 
-        style={[
-          styles.beigeBackground,
-          {
-            transform: [{ scale: backgroundPulse }],
-          },
-        ]} 
-      />
-      
-      <SafeAreaView style={styles.safeArea}>
-        {/* Floating fashion icons */}
-        <FloatingIcon 
-          iconName="shirt-outline" 
-          delay={2500}
-          style={[styles.floatingIcon, styles.shirtIcon]} 
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {/* Decorative floating cards */}
+        <FloatingCard
+          delay={0}
+          rotate="-8deg"
+          style={{ top: height * 0.14, left: width * 0.06, width: width * 0.42, height: height * 0.26 }}
         />
-        <FloatingIcon 
-          iconName="bag-outline" 
-          delay={3000}
-          style={[styles.floatingIcon, styles.bagIcon]} 
-        />
-        <FloatingIcon 
-          iconName="diamond-outline" 
-          delay={3500}
-          style={[styles.floatingIcon, styles.diamondIcon]} 
-        />
-        <FloatingIcon 
-          iconName="glasses-outline" 
-          delay={4000}
-          style={[styles.floatingIcon, styles.glassesIcon]} 
-        />
-
-        {/* Mock outfit cards in background */}
-        <AnimatedOutfitCard 
+        <FloatingCard
           delay={1500}
-          style={[styles.mockCard, styles.mockCard1]} 
-        />
-        <AnimatedOutfitCard 
-          delay={2000}
-          style={[styles.mockCard, styles.mockCard2]} 
-        />
-        <AnimatedOutfitCard 
-          delay={2500}
-          style={[styles.mockCard, styles.mockCard3]} 
+          rotate="10deg"
+          style={{ top: height * 0.2, right: width * 0.06, width: width * 0.42, height: height * 0.26 }}
         />
 
-        <View style={styles.content}>
-          {/* Logo */}
-          <Animated.View 
-            style={[
-              styles.logoContainer,
-              {
-                opacity: logoOpacity,
-                transform: [
-                  { scale: Animated.multiply(logoScale, logoPulse) }
-                ],
-              },
-            ]}
-          >
-            <Image 
-              source={require('../assets/logo.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </Animated.View>
-
-          {/* Main content */}
-          <View style={styles.textSection}>
-            <Animated.Text 
-              style={[
-                styles.mainTitle,
-                {
-                  opacity: titleOpacity,
-                  transform: [
-                    { translateY: titleTranslateY },
-                    { scale: titleScale }
-                  ],
-                },
-              ]}
-            >
-              Discover Your{'\n'}Perfect Style
-            </Animated.Text>
-            
-            <Animated.Text 
-              style={[
-                styles.subtitle,
-                {
-                  opacity: subtitleOpacity,
-                  transform: [{ translateY: subtitleTranslateY }],
-                },
-              ]}
-            >
-              Connect with brands, explore outfits, and find articles that match your unique style
-            </Animated.Text>
-          </View>
-
-          {/* Action buttons */}
-          <Animated.View 
-            style={[
-              styles.buttonSection,
-              {
-                opacity: buttonsOpacity,
-                transform: [
-                  { translateY: buttonsTranslateY },
-                  { scale: buttonScale }
-                ],
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-              <Icon name="arrow-forward" size={20} color="#000000" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => navigation.navigate('Login')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.secondaryButtonText}>I already have an account</Text>
-            </TouchableOpacity>
-          </Animated.View>
+        {/* Brand mark */}
+        <View style={styles.logoWrap}>
+          <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         </View>
+
+        {/* Headline + CTAs, anchored bottom */}
+        <Animated.View
+          style={[styles.content, { opacity: enter, transform: [{ translateY: contentTranslate }] }]}
+        >
+          <Text style={styles.title}>Discover Your{'\n'}Perfect Style</Text>
+          <Text style={styles.subtitle}>
+            Connect with brands, explore outfits, and find articles that match your style
+          </Text>
+          <Button
+            label="Get Started"
+            onPress={() => navigation.navigate('SignUp')}
+            trailing={<Icon name="arrow-forward" size={20} color={colors.onCta} />}
+          />
+          <Button
+            label="I already have an account"
+            variant="secondary"
+            onPress={() => navigation.navigate('Login')}
+          />
+        </Animated.View>
       </SafeAreaView>
     </View>
   );
@@ -490,180 +118,47 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  beigeBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#E8D5C4',
+    backgroundColor: colors.panel,
   },
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  floatingIcon: {
+  floatingCard: {
     position: 'absolute',
+    backgroundColor: colors.fill,
+    borderRadius: radius.panel,
+    ...shadows.float,
   },
-  shirtIcon: {
-    top: height * 0.15,
-    left: width * 0.1,
-  },
-  bagIcon: {
-    top: height * 0.25,
-    right: width * 0.15,
-  },
-  diamondIcon: {
-    top: height * 0.35,
-    left: width * 0.15,
-  },
-  glassesIcon: {
-    top: height * 0.45,
-    right: width * 0.1,
-  },
-  mockCard: {
-    position: 'absolute',
-    width: 120,
-    height: 180,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
-    opacity: 0.9,
-  },
-  mockCard1: {
-    top: height * 0.12,
-    right: width * 0.05,
-    transform: [{ rotate: '12deg' }],
-  },
-  mockCard2: {
-    top: height * 0.28,
-    left: width * 0.05,
-    transform: [{ rotate: '-8deg' }],
-  },
-  mockCard3: {
-    top: height * 0.42,
-    right: width * 0.1,
-    transform: [{ rotate: '15deg' }],
-  },
-  mockOutfitCard: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  mockImage: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  mockCardContent: {
-    padding: 8,
-  },
-  mockUserRow: {
-    flexDirection: 'row',
+  logoWrap: {
     alignItems: 'center',
-  },
-  mockAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#E8D5C4',
-    marginRight: 6,
-  },
-  mockUserInfo: {
-    flex: 1,
-  },
-  mockUsername: {
-    width: 40,
-    height: 8,
-    backgroundColor: '#ddd',
-    borderRadius: 4,
-    marginBottom: 2,
-  },
-  mockTimestamp: {
-    width: 25,
-    height: 6,
-    backgroundColor: '#eee',
-    borderRadius: 3,
-  },
-  mockHeartIcon: {
-    marginLeft: 4,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginTop: 20,
+    marginTop: spacing.xxl,
   },
   logo: {
-    width: width * 0.6,
-    height: width * 0.2,
-    maxWidth: 240,
-    maxHeight: 80,
+    width: 220,
+    height: 72,
   },
-  textSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  content: {
+    marginTop: 'auto',
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
   },
-  mainTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000000',
-    textAlign: 'center',
-    lineHeight: 38,
-    marginBottom: 20,
+  title: {
+    fontFamily: fontFamily.bold,
+    fontSize: 36,
+    lineHeight: 40,
     letterSpacing: -0.5,
+    color: colors.ink,
+    textAlign: 'center',
   },
   subtitle: {
+    fontFamily: fontFamily.regular,
     fontSize: 16,
-    color: '#666666',
+    lineHeight: 22,
+    color: colors.faded,
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 10,
-  },
-  buttonSection: {
-    gap: 16,
-  },
-  primaryButton: {
-    backgroundColor: 'rgba(230,166,107,0.77)',
-    height: 60,
-    paddingHorizontal: 24,
-    borderRadius: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    marginRight: 8,
-  },
-  secondaryButton: {
-    backgroundColor: '#FFF8F8',
-    height: 60,
-    paddingHorizontal: 24,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000000',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
   },
 });
