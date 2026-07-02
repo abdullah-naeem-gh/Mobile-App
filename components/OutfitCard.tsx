@@ -1,441 +1,339 @@
-import React, { useState, useMemo, useEffect } from 'react';
+// OutfitCard — Reels-style full-bleed outfit card. Same chassis as
+// ArticleCard, with author/time-ago meta instead of brand/price and a
+// "Show Articles" pill that toggles the tag overlay. Binds to the typed
+// OutfitCardData shape returned by outfitService.getOutfits.
+
+import React, { useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
   Animated,
   Alert,
   Linking,
+  Pressable,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OutfitTagsOverlay } from './OutfitTagsOverlay';
-import { PLATFORM_CONSTANTS } from '../utils/platformUtils';
-
-const { width, height } = Dimensions.get('window');
-
-// Fixed design dimensions for outfit cards
-const DESIGN_WIDTH = 380;
-const DESIGN_HEIGHT = 680;
-
-// Calculate responsive card dimensions
-const availableWidth = width * 0.85;
-const scaleFactor = Math.min(availableWidth / DESIGN_WIDTH, 1.2);
-const cardWidth = DESIGN_WIDTH * scaleFactor;
-const cardHeight = DESIGN_HEIGHT * scaleFactor;
-
-interface User {
-  id: string;
-  username: string;
-  profile_image_url?: string;
-}
-
-interface Outfit {
-  id: string;
-  image_urls: string[];
-  description?: string;
-  user: User;
-  likes_count: number;
-  saves_count: number;
-  is_liked: boolean;
-  is_saved: boolean;
-  created_at: string;
-  outfit_articles?: {
-    x_position: number;
-    y_position: number;
-    articles: {
-      id: string;
-      title: string;
-      price?: number;
-      currency?: string;
-      image_urls?: string[];
-      purchase_url?: string;
-    };
-  }[];
-}
+import { PressableScale } from './ui';
+import { OutfitCardData } from '../types';
+import { formatTimeAgo } from '../utils/time';
+import { colors, radius, fontFamily, spacing, shadows } from '../theme';
 
 interface OutfitCardProps {
-  outfit: Outfit;
-  onPress: (outfit: Outfit) => void;
+  outfit: OutfitCardData;
+  onPress: (outfit: OutfitCardData) => void;
   onLikeChange: (outfitId: string, isLiked: boolean) => void;
   onSaveChange: (outfitId: string, isSaved: boolean) => void;
+  style?: StyleProp<ViewStyle>;
 }
+
+const RAIL_ICON = '#fff';
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
   outfit,
   onPress,
   onLikeChange,
   onSaveChange,
+  style,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showArticles, setShowArticles] = useState(false);
-  const imageOpacity = useState(new Animated.Value(0))[0];
+  const imageOpacity = useRef(new Animated.Value(0)).current;
 
-  // Process image URL with cache busting parameter
   const imageUrl = useMemo(() => {
-    if (!outfit.image_urls || outfit.image_urls.length === 0) return null;
-    
-    const baseUrl = outfit.image_urls[0];
+    const baseUrl = outfit.image_urls?.[0];
     if (!baseUrl) return null;
-    
     const separator = baseUrl.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}_imgcache=${outfit.id.substring(0, 8)}`;
   }, [outfit.image_urls, outfit.id]);
 
-  const handleLike = () => {
-    onLikeChange(outfit.id, !outfit.is_liked);
-  };
+  const hasArticles = Boolean(outfit.outfit_articles && outfit.outfit_articles.length > 0);
+  const tags = (outfit.style_tags ?? []).slice(0, 3).join(' · ');
+  const initial = outfit.user?.username?.charAt(0)?.toUpperCase() ?? 'U';
 
-  const handleSave = () => {
-    onSaveChange(outfit.id, !outfit.is_saved);
-  };
-
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    Animated.timing(imageOpacity, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const formatTimestamp = () => {
-    // Simple timestamp formatting - you can make this more sophisticated
-    return '2h ago';
-  };
-
-  const handleArticleClick = (article: any) => {
-    console.log('=== Article clicked ===');
-    console.log('Article:', article);
-    console.log('Purchase URL:', article.purchase_url);
-    
-    if (article.purchase_url) {
-      console.log('Opening URL directly in external browser:', article.purchase_url);
-      Linking.openURL(article.purchase_url).catch(err => {
-        console.error('Failed to open URL in external browser:', err);
-        Alert.alert('Error', 'Unable to open the link. Please try again later.');
-      });
-    } else {
-      console.log('No purchase URL available for article:', article.title);
-      Alert.alert(
-        'No Purchase Link',
-        'This article doesn\'t have a purchase link available.',
-        [{ text: 'OK' }]
+  const openArticle = (purchaseUrl?: string, title?: string) => {
+    if (purchaseUrl) {
+      Linking.openURL(purchaseUrl).catch(() =>
+        Alert.alert('Error', 'Unable to open the link. Please try again later.'),
       );
+    } else {
+      Alert.alert(title ?? 'Article', "This article doesn't have a purchase link available.", [
+        { text: 'OK' },
+      ]);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.cardContent}>
-        {/* Outfit Image with overlay info */}
-        <TouchableOpacity onPress={() => onPress(outfit)} activeOpacity={0.8}>
-          <View style={styles.imageContainer}>
-            {/* Close button */}
-            <TouchableOpacity style={styles.closeButton}>
-              <Icon name="close" size={20} color="#000000" />
-            </TouchableOpacity>
-            
-            {/* Like button */}
-            <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
-              <Icon 
-                name={outfit.is_liked ? "heart" : "heart-outline"} 
-                size={24} 
-                color={outfit.is_liked ? "#ff3040" : "#000000"} 
-              />
-              <Text style={styles.likeCount}>{outfit.likes_count || 0}</Text>
-            </TouchableOpacity>
-
-            {/* Loading state */}
-            {imageLoading && imageUrl && (
-              <View style={styles.imageLoadingContainer}>
-                <ActivityIndicator size="large" color="#666666" />
-              </View>
-            )}
-
-            {/* Error state */}
-            {!imageUrl || imageError ? (
-              <View style={styles.imageErrorContainer}>
-                <Icon name="image-outline" size={40} color="#666666" />
-                <Text style={styles.imageErrorText}>
-                  {!imageUrl ? 'No image available' : 'Failed to load image'}
-                </Text>
-              </View>
-            ) : (
-              <Animated.Image
-                source={{ uri: imageUrl }}
-                style={[styles.outfitImage, { opacity: imageOpacity }]}
-                onLoad={handleImageLoad}
-                onError={() => {
-                  setImageLoading(false);
-                  setImageError(true);
-                }}
-                resizeMode="cover"
-              />
-            )}
-
-            {/* Outfit Tags Overlay */}
-            {!imageLoading && outfit.outfit_articles && outfit.outfit_articles.length > 0 && showArticles && (
-              <OutfitTagsOverlay 
-                outfitArticles={outfit.outfit_articles}
-                showCards={true}
-                onTagPress={(article) => {
-                  handleArticleClick(article.articles);
-                }}
-              />
-            )}
-
-            {/* Gradient overlay with user info */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.overlayInfo}
-            >
-              <View style={styles.userInfoRow}>
-                <View style={styles.userInfo}>
-                  <View style={styles.userImageContainer}>
-                    {outfit.user?.profile_image_url ? (
-                      <Image 
-                        source={{ uri: outfit.user.profile_image_url }} 
-                        style={styles.userImage}
-                        onError={() => {}}
-                      />
-                    ) : (
-                      <View style={styles.userImagePlaceholder}>
-                        <Text style={styles.userInitial}>
-                          {outfit.user?.username?.charAt(0)?.toUpperCase() || 'U'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.userDetails}>
-                    <Text style={styles.username}>{outfit.user?.username || 'Unknown User'}</Text>
-                    <Text style={styles.timestamp}>{formatTimestamp()}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={handleSave} style={styles.saveButtonOverlay}>
-                  <Icon 
-                    name={outfit.is_saved ? "bookmark" : "bookmark-outline"} 
-                    size={24} 
-                    color="#ffffff" 
-                  />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
-        </TouchableOpacity>
-
-        {/* Bottom section */}
-        <View style={styles.bottomSection}>
-          <View style={styles.actionRow}>
-            <Text style={styles.savesCount}>{outfit.saves_count} saves</Text>
-            {outfit.outfit_articles && outfit.outfit_articles.length > 0 && (
-              <TouchableOpacity 
-                onPress={() => setShowArticles(!showArticles)} 
-                style={styles.showArticlesButton}
-              >
-                <Text style={styles.showArticlesText}>
-                  {showArticles ? 'Hide articles' : 'Show articles'}
-                </Text>
-                <Icon 
-                  name={showArticles ? "chevron-up" : "chevron-down"} 
-                  size={16} 
-                  color="#666666" 
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {outfit.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {outfit.description}
-            </Text>
-          )}
+    <Pressable style={[styles.card, style]} onPress={() => onPress(outfit)}>
+      {/* Full-bleed photo */}
+      {imageUrl && !imageError ? (
+        <Animated.Image
+          source={{ uri: imageUrl }}
+          style={[styles.photo, { opacity: imageOpacity }]}
+          resizeMode="cover"
+          onLoad={() => {
+            setImageLoading(false);
+            Animated.timing(imageOpacity, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }).start();
+          }}
+          onError={() => {
+            setImageLoading(false);
+            setImageError(true);
+          }}
+        />
+      ) : (
+        <View style={styles.fallback}>
+          <Icon name="image-outline" size={40} color={colors.muted} />
+          <Text style={styles.fallbackText}>
+            {imageUrl ? 'Failed to load image' : 'No image available'}
+          </Text>
         </View>
+      )}
+
+      {imageLoading && imageUrl && !imageError ? (
+        <View style={styles.loader} pointerEvents="none">
+          <ActivityIndicator size="large" color={colors.muted} />
+        </View>
+      ) : null}
+
+      {/* Tag overlay (toggled by Show Articles) */}
+      {!imageLoading && hasArticles && showArticles ? (
+        <OutfitTagsOverlay
+          outfitArticles={outfit.outfit_articles!}
+          showCards
+          onTagPress={(a) => openArticle(a.articles.purchase_url, a.articles.title)}
+        />
+      ) : null}
+
+      {/* Right action rail */}
+      <View style={styles.rail}>
+        <PressableScale
+          style={styles.railBtn}
+          activeScale={0.85}
+          onPress={() => onLikeChange(outfit.id, !outfit.is_liked)}
+          accessibilityLabel="Like"
+        >
+          <Icon
+            name={outfit.is_liked ? 'heart' : 'heart-outline'}
+            size={30}
+            color={outfit.is_liked ? colors.heart : RAIL_ICON}
+          />
+          <Text style={styles.railCount}>{outfit.likes_count ?? 0}</Text>
+        </PressableScale>
+
+        <PressableScale
+          style={styles.railBtn}
+          activeScale={0.85}
+          onPress={() => onSaveChange(outfit.id, !outfit.is_saved)}
+          accessibilityLabel="Save"
+        >
+          <Icon
+            name={outfit.is_saved ? 'bookmark' : 'bookmark-outline'}
+            size={26}
+            color={RAIL_ICON}
+          />
+          <Text style={styles.railCount}>{outfit.saves_count ?? 0}</Text>
+        </PressableScale>
+
+        <PressableScale style={styles.railBtn} activeScale={0.85} accessibilityLabel="Share">
+          <Icon name="share-social-outline" size={26} color={RAIL_ICON} />
+        </PressableScale>
       </View>
-    </View>
+
+      {/* Bottom gradient info */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.7)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.info}
+      >
+        <View style={styles.userRow}>
+          {outfit.user?.profile_image_url ? (
+            <Image source={{ uri: outfit.user.profile_image_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>{initial}</Text>
+            </View>
+          )}
+          <View style={styles.userMeta}>
+            <Text style={styles.username} numberOfLines={1}>
+              {outfit.user?.username ?? 'Unknown User'}
+            </Text>
+            <Text style={styles.timestamp}>{formatTimeAgo(outfit.created_at)}</Text>
+          </View>
+        </View>
+
+        {outfit.description ? (
+          <Text style={styles.description} numberOfLines={2}>
+            {outfit.description}
+          </Text>
+        ) : null}
+
+        <View style={styles.bottomRow}>
+          <Text style={styles.tags} numberOfLines={1}>
+            {tags}
+          </Text>
+          {hasArticles ? (
+            <PressableScale
+              style={styles.showArticles}
+              onPress={() => setShowArticles((s) => !s)}
+              accessibilityLabel={showArticles ? 'Hide articles' : 'Show articles'}
+            >
+              <Text style={styles.showArticlesText}>
+                {showArticles ? 'Hide Articles' : 'Show Articles'}
+              </Text>
+              <Icon
+                name={showArticles ? 'chevron-up' : 'arrow-forward'}
+                size={14}
+                color={colors.onCta}
+              />
+            </PressableScale>
+          ) : null}
+        </View>
+      </LinearGradient>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'transparent',
-    width: width,
-    height: height, // Full screen height for reel effect
-    paddingHorizontal: 10,
-    paddingVertical: 0,
-    justifyContent: 'flex-start',
-  },
-  cardContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    ...PLATFORM_CONSTANTS.SHADOW_PROPS,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 21,
-    elevation: 20,
-    width: cardWidth,
-    height: cardHeight,
-    alignSelf: 'center',
-    marginTop: PLATFORM_CONSTANTS.OUTFIT_CARD_MARGIN_TOP, // Use outfit-specific positioning
-    marginBottom: 20,
-  },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: cardHeight * 0.8, // Image takes 80% of card height
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  card: {
+    flex: 1,
+    borderRadius: radius.panel,
     overflow: 'hidden',
+    backgroundColor: colors.surface,
+    ...shadows.card,
   },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 32,
-    height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  likeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  likeCount: {
-    color: '#000000',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  outfitImage: {
+  photo: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-    backgroundColor: '#ffffff',
   },
-  imageLoadingContainer: {
-    position: 'absolute',
-    justifyContent: 'center',
+  fallback: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#ffffff',
-  },
-  imageErrorContainer: {
     justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#ffffff',
+    gap: spacing.sm,
+    backgroundColor: colors.fill,
   },
-  imageErrorText: {
-    color: '#666666',
+  fallbackText: {
+    fontFamily: fontFamily.regular,
     fontSize: 14,
-    marginTop: 8,
-    textAlign: 'center',
+    color: colors.muted,
   },
-  overlayInfo: {
+  loader: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rail: {
     position: 'absolute',
-    bottom: 0,
+    right: spacing.md,
+    bottom: 160,
+    alignItems: 'center',
+    gap: spacing.xl,
+    zIndex: 3,
+  },
+  railBtn: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  railCount: {
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    color: '#fff',
+  },
+  info: {
+    position: 'absolute',
     left: 0,
     right: 0,
-    padding: 16,
+    bottom: 0,
+    padding: spacing.lg,
+    paddingTop: spacing.x40,
+    gap: spacing.s10,
+    zIndex: 2,
   },
-  userInfoRow: {
+  userRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.s10,
   },
-  userInfo: {
-    flexDirection: 'row',
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
+  },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.tag,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
     alignItems: 'center',
-    flex: 1,
-  },
-  userImageContainer: {
-    marginRight: 12,
-  },
-  userImage: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: '#333333',
-  },
-  userImagePlaceholder: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: '#333333',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  userInitial: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  avatarInitial: {
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    color: colors.ink,
   },
-  userDetails: {
+  userMeta: {
     flex: 1,
   },
   username: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    color: '#fff',
   },
   timestamp: {
-    color: '#ffffff',
-    fontSize: 14,
-    opacity: 0.8,
-  },
-  saveButtonOverlay: {
-    marginLeft: 12,
-  },
-  bottomSection: {
-    padding: 16,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  savesCount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
-  },
-  showArticlesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  showArticlesText: {
-    color: '#666666',
-    fontSize: 14,
-    fontWeight: '500',
-    marginRight: 4,
+    fontFamily: fontFamily.regular,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
   },
   description: {
-    color: '#666666',
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: 'rgba(255,255,255,0.95)',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  tags: {
+    flex: 1,
+    fontFamily: fontFamily.regular,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  showArticles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.cta,
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  showArticlesText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    color: colors.onCta,
   },
 });

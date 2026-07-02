@@ -1,35 +1,34 @@
+// HomeScreen — Articles feed. A paged, Reels-style vertical FlatList of
+// ArticleCards. The page height is measured from the list viewport (onLayout)
+// instead of a hardcoded Platform.OS fork, so it adapts to any device and to
+// the tab bar. The AppHeader floats over a beige panel at the top.
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  ScrollView,
   RefreshControl,
   Alert,
-  Dimensions,
-  Image,
-  Platform,
-  StatusBar,
   Animated,
-  Linking,
+  LayoutChangeEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@expo/vector-icons/Ionicons';
-import { useAuth } from '../contexts/AuthContext';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { AppHeader, BeigePanel } from '../components/ui';
 import { ArticleCard } from '../components/ArticleCard';
 import { FiltersModal } from '../components/FiltersModal';
-import { Article, CategoryType, GenderType } from '../types';
+import { Article } from '../types';
 import { articleService, ArticleFilters } from '../services/articleService';
-import { useNavigation } from '@react-navigation/native';
 import { preloadImages } from '../lib/imageUtils';
+import { colors, spacing, fontFamily } from '../theme';
 
-const { width, height } = Dimensions.get('window');
+const PAGE_SIZE = 20;
 
 export const HomeScreen: React.FC = () => {
-  const { signOut } = useAuth();
-  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,114 +36,41 @@ export const HomeScreen: React.FC = () => {
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const flatListRef = useRef<FlatList>(null);
+  const [pageHeight, setPageHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const loadArticles = useCallback(async (
-    currentPage: number = 0, 
-    currentFilters: ArticleFilters = filters,
-    reset: boolean = false
-  ) => {
-    if (loading && !reset) return;
-    
-    setLoading(true);
-    
-    const { data, error } = await articleService.getArticles(currentFilters, currentPage);
-    
-    if (error) {
-      Alert.alert('Error', error);
-    } else {
-      const articles = data || []; // Handle undefined data
-      if (reset || currentPage === 0) {
-        setArticles(articles);
+  // Card top offset = floating header height; bottom = breathing room.
+  const headerOffset = insets.top + 60;
+
+  const loadArticles = useCallback(
+    async (currentPage: number, currentFilters: ArticleFilters, reset: boolean) => {
+      if (loading && !reset) return;
+      setLoading(true);
+      const { data, error } = await articleService.getArticles(currentFilters, currentPage);
+      if (error) {
+        Alert.alert('Error', error);
       } else {
-        setArticles(prev => [...prev, ...articles]);
+        const next = data ?? [];
+        setArticles((prev) => (reset || currentPage === 0 ? next : [...prev, ...next]));
+        setHasMore(next.length === PAGE_SIZE);
       }
-      setHasMore(articles.length === 20); // Assuming limit is 20
-    }
-    
-    setLoading(false);
-  }, [filters, loading]);
+      setLoading(false);
+    },
+    [loading],
+  );
 
   useEffect(() => {
     loadArticles(0, filters, true);
     setPage(0);
   }, [filters]);
 
-  // Add preloading logic for images when articles load
+  // Preload the first few article + brand images for a smoother feed.
   useEffect(() => {
-    if (articles.length > 0) {
-      // Preload first few images for better UX
-      const imageUrls = articles
-        .slice(0, 5) // First 5 articles
-        .map(article => article.image_urls?.[0])
-        .filter(Boolean) as string[];
-      
-      // Also preload brand logos
-      const brandLogoUrls = articles
-        .slice(0, 5)
-        .map(article => article.brand?.logo_url)
-        .filter(Boolean) as string[];
-      
-      preloadImages([...imageUrls, ...brandLogoUrls]);
-    }
+    if (articles.length === 0) return;
+    const imageUrls = articles.slice(0, 5).map((a) => a.image_urls?.[0]).filter(Boolean) as string[];
+    const logoUrls = articles.slice(0, 5).map((a) => a.brand?.logo_url).filter(Boolean) as string[];
+    preloadImages([...imageUrls, ...logoUrls]);
   }, [articles]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleScroll = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    scrollY.setValue(offsetY);
-    
-    // Calculate current index based on scroll position
-    const index = Math.round(offsetY / height);
-    if (index !== currentIndex && index >= 0 && index < articles.length) {
-      setCurrentIndex(index);
-    }
-  }, [currentIndex, articles.length]);
-
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: height,
-    offset: height * index,
-    index,
-  }), []);
-
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      const newIndex = viewableItems[0].index;
-      if (newIndex !== currentIndex) {
-        setCurrentIndex(newIndex);
-      }
-    }
-  }, [currentIndex]);
-
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 60, // Reduced for smoother transitions
-    minimumViewTime: 200, // Increased for more stability
-  };
-
-  // Add momentum-based smooth scrolling
-  const handleMomentumScrollEnd = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offsetY / height);
-    
-    // Ensure we're properly snapped to a card with gentler correction
-    if (Math.abs(offsetY - (index * height)) > 20) {
-      flatListRef.current?.scrollToOffset({
-        offset: index * height,
-        animated: true,
-      });
-    }
-  }, []);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -163,132 +89,99 @@ export const HomeScreen: React.FC = () => {
 
   const handleApplyFilters = useCallback((newFilters: ArticleFilters) => {
     setFilters(newFilters);
-    setPage(0);
-    loadArticles(0, newFilters, true);
-  }, [loadArticles]);
+  }, []);
 
-  const hasActiveFilters = filters.search || filters.gender || filters.category || 
-                          (filters.colors && filters.colors.length > 0) || 
-                          (filters.sizes && filters.sizes.length > 0) ||
-                          filters.priceRange;
+  const hasActiveFilters = Boolean(
+    filters.search ||
+      filters.gender ||
+      filters.category ||
+      (filters.colors && filters.colors.length > 0) ||
+      (filters.sizes && filters.sizes.length > 0) ||
+      filters.priceRange,
+  );
 
   const handleLikeChange = async (articleId: string, isLiked: boolean) => {
-    // Optimistically update UI
-    setArticles(prev =>
-      prev.map(article =>
-        article.id === articleId
-          ? {
-              ...article,
-              is_liked: isLiked,
-              likes_count: article.likes_count + (isLiked ? 1 : -1),
-            }
-          : article
-      )
+    setArticles((prev) =>
+      prev.map((a) =>
+        a.id === articleId
+          ? { ...a, is_liked: isLiked, likes_count: a.likes_count + (isLiked ? 1 : -1) }
+          : a,
+      ),
     );
-
-    // Make API call
     const result = await articleService.toggleLike(articleId);
-
     if (!result.success) {
-      // Revert optimistic update on failure
-      setArticles(prev =>
-        prev.map(article =>
-          article.id === articleId
-            ? {
-                ...article,
-                is_liked: !isLiked,
-                likes_count: article.likes_count + (isLiked ? -1 : 1),
-              }
-            : article
-        )
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.id === articleId
+            ? { ...a, is_liked: !isLiked, likes_count: a.likes_count + (isLiked ? -1 : 1) }
+            : a,
+        ),
       );
       Alert.alert('Error', result.error || 'Failed to update like');
     }
   };
 
   const handleSaveChange = async (articleId: string, isSaved: boolean) => {
-    // Optimistically update UI
-    setArticles(prev =>
-      prev.map(article =>
-        article.id === articleId
-          ? {
-              ...article,
-              is_saved: isSaved,
-              saves_count: article.saves_count + (isSaved ? 1 : -1),
-            }
-          : article
-      )
+    setArticles((prev) =>
+      prev.map((a) =>
+        a.id === articleId
+          ? { ...a, is_saved: isSaved, saves_count: a.saves_count + (isSaved ? 1 : -1) }
+          : a,
+      ),
     );
-
-    // Make API call
     const result = await articleService.toggleSave(articleId);
-
     if (!result.success) {
-      // Revert optimistic update on failure
-      setArticles(prev =>
-        prev.map(article =>
-          article.id === articleId
-            ? {
-                ...article,
-                is_saved: !isSaved,
-                saves_count: article.saves_count + (isSaved ? -1 : 1),
-              }
-            : article
-        )
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.id === articleId
+            ? { ...a, is_saved: !isSaved, saves_count: a.saves_count + (isSaved ? -1 : 1) }
+            : a,
+        ),
       );
       Alert.alert('Error', result.error || 'Failed to update save');
     }
   };
 
-  const handleExternalLink = (article: Article) => {
-    if (article.purchase_url) {
-      console.log('Opening URL directly in external browser:', article.purchase_url);
-      Linking.openURL(article.purchase_url).catch(err => {
-        console.error('Failed to open URL in external browser:', err);
-        Alert.alert('Error', 'Unable to open the link. Please try again later.');
-      });
-    } else {
-      Alert.alert(
-        article.title,
-        `Brand: ${article.brand?.name}\nPrice: ${article.currency} ${article.price}\n\n${article.description}`,
-        [{ text: 'Close', style: 'cancel' }]
-      );
-    }
+  const onListLayout = (e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h > 0 && h !== pageHeight) setPageHeight(h);
   };
 
   const renderArticle = ({ item, index }: { item: Article; index: number }) => {
-    const inputRange = [
-      (index - 1) * height,
-      index * height,
-      (index + 1) * height,
-    ];
-
+    // Subtle scale/opacity falloff for cards entering/leaving the viewport.
+    const h = pageHeight || 1;
+    const inputRange = [(index - 1) * h, index * h, (index + 1) * h];
     const scale = scrollY.interpolate({
       inputRange,
-      outputRange: [0.95, 1, 0.95], // Much more subtle scaling
+      outputRange: [0.95, 1, 0.95],
       extrapolate: 'clamp',
     });
-
     const opacity = scrollY.interpolate({
       inputRange,
-      outputRange: [0.8, 1, 0.8], // More subtle opacity change
+      outputRange: [0.85, 1, 0.85],
       extrapolate: 'clamp',
     });
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
-          styles.articleContainer,
+          styles.page,
           {
+            height: pageHeight,
+            paddingTop: headerOffset,
+            paddingBottom: spacing.md,
             opacity,
             transform: [{ scale }],
-          }
+          },
         ]}
       >
         <ArticleCard
           article={item}
           onLikeChange={handleLikeChange}
           onSaveChange={handleSaveChange}
+          onPress={() =>
+            navigation.navigate('FullScreenArticle', { articles, initialIndex: index })
+          }
         />
       </Animated.View>
     );
@@ -296,85 +189,58 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Platform-specific status bar */}
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
-        translucent={true}
-      />
-      
-      {/* Static beige background for consistency */}
-      <View style={styles.beigeBackground} />
-      
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Image 
-            source={require('../assets/logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <View style={styles.headerIcons}>
-            <TouchableOpacity 
-              style={[styles.iconButton, hasActiveFilters && styles.activeFilterIcon]}
-              onPress={() => setShowFiltersModal(true)}
-            >
-              <Icon 
-                name="options-outline" 
-                size={20} 
-                color={hasActiveFilters ? '#ffffff' : '#000000'} 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <BeigePanel height={headerOffset + spacing.xl} />
 
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
         <FlatList
-          ref={flatListRef}
           data={articles}
           renderItem={renderArticle}
           keyExtractor={(item) => item.id}
-          pagingEnabled={true}
+          onLayout={onListLayout}
+          pagingEnabled
           showsVerticalScrollIndicator={false}
-          snapToInterval={height}
+          snapToInterval={pageHeight || undefined}
           snapToAlignment="start"
-          decelerationRate={Platform.OS === 'ios' ? 0.95 : 'fast'} // Platform-specific deceleration
-          bounces={false}
-          bouncesZoom={false}
-          contentContainerStyle={styles.listContainer}
+          decelerationRate="fast"
+          getItemLayout={(_, index) => ({
+            length: pageHeight,
+            offset: pageHeight * index,
+            index,
+          })}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { 
-              useNativeDriver: false,
-              listener: handleScroll,
-            }
-          )}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          scrollEventThrottle={16} // Increased for smoother transitions
-          getItemLayout={getItemLayout}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          removeClippedSubviews={Platform.OS === 'android'}
-          maxToRenderPerBatch={1}
-          windowSize={2}
-          initialNumToRender={1}
-          updateCellsBatchingPeriod={100}
-          disableIntervalMomentum={false}
+          onEndReachedThreshold={0.4}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          initialNumToRender={2}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
+          }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No articles found</Text>
-              <Text style={styles.emptySubText}>Try adjusting your filters</Text>
-            </View>
+            pageHeight > 0 && !loading ? (
+              <View style={[styles.empty, { height: pageHeight, paddingTop: headerOffset }]}>
+                <Text style={styles.emptyText}>No articles found</Text>
+                <Text style={styles.emptySub}>Try adjusting your filters</Text>
+              </View>
+            ) : null
           }
         />
-        
-        <FiltersModal
-          visible={showFiltersModal}
-          onClose={() => setShowFiltersModal(false)}
-          onApplyFilters={handleApplyFilters}
-          currentFilters={filters}
-        />
       </SafeAreaView>
+
+      {/* Floating header over the feed */}
+      <View style={styles.header} pointerEvents="box-none">
+        <AppHeader onFilter={() => setShowFiltersModal(true)} hasFilters={hasActiveFilters} />
+      </View>
+
+      <FiltersModal
+        visible={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={filters}
+      />
     </View>
   );
 };
@@ -382,18 +248,7 @@ export const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  beigeBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'ios' ? 670 : 630, // Reduced height to match design - just covers header area
-    backgroundColor: '#E8D5C4', // Consistent beige color
-    borderBottomLeftRadius: 43,
-    borderBottomRightRadius: 43,
-    opacity: 0.95,
+    backgroundColor: colors.bg,
   },
   safeArea: {
     flex: 1,
@@ -404,74 +259,25 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 2000, // Higher z-index to stay above cards
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  page: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: spacing.lg,
+  },
+  empty: {
     alignItems: 'center',
-    paddingHorizontal: 15,
-    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
-    paddingTop: 12,
-    paddingBottom: 15,
-    backgroundColor: 'rgba(232, 213, 196, 0.95)', // Semi-transparent beige
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
-  },
-  logo: {
-    width: width * 0.55, // Responsive width (roughly 220px on most phones)
-    height: width * 0.18, // Responsive height (roughly 72px on most phones)
-    maxWidth: 220,
-    maxHeight: 72,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    padding: 8,
-    marginRight: 10,
-    borderRadius: 16,
-  },
-  filterIcon: {
-    fontSize: 20,
-    color: '#000000',
-  },
-  activeFilterIcon: {
-    backgroundColor: '#000000',
-    borderRadius: 16,
-  },
-  activeFilterIconText: {
-    color: '#ffffff',
-  },
-  articleContainer: {
-    height: height,
-    justifyContent: 'flex-start', // Change to flex-start for manual positioning
-    alignItems: 'center',
-    paddingTop: 0, // Remove padding as we're handling it in ArticleCard
-    paddingHorizontal: 0, // Remove horizontal padding to match design
-  },
-  listContainer: {
-    flexGrow: 1,
-    // No additional padding - cards start right after header
-    paddingTop: 0,
-  },
-  emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    height: height - 200, // Adjust for header
-    paddingTop: 0, // Remove platform-specific padding
+    gap: spacing.sm,
   },
   emptyText: {
+    fontFamily: fontFamily.bold,
     fontSize: 18,
-    color: '#000000',
-    marginBottom: 8,
+    color: colors.ink,
   },
-  emptySubText: {
+  emptySub: {
+    fontFamily: fontFamily.regular,
     fontSize: 14,
-    color: '#666666',
+    color: colors.muted,
   },
 });
