@@ -152,33 +152,6 @@ const LoadingScreen = () => (
   </View>
 );
 
-// Debug component to show auth state (remove in production)
-// const DebugInfo = () => {
-//   const { session, isNewUser } = useAuth();
-  
-//   if (__DEV__) {
-//     return (
-//       <View style={{ 
-//         position: 'absolute', 
-//         top: 50, 
-//         right: 10, 
-//         backgroundColor: 'rgba(255,255,255,0.8)', 
-//         padding: 5, 
-//         borderRadius: 5,
-//         zIndex: 1000 
-//       }}>
-//         <Text style={{ fontSize: 10, color: 'black' }}>
-//           Session: {session ? '✓' : '✗'}
-//         </Text>
-//         <Text style={{ fontSize: 10, color: 'black' }}>
-//           New User: {isNewUser ? '✓' : '✗'}
-//         </Text>
-//       </View>
-//     );
-//   }
-//   return null;
-// };
-
 export const AppNavigator = () => {
   const { session, loading, isNewUser } = useAuth();
 
@@ -188,7 +161,6 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {/* <DebugInfo /> */}
       {session ? (isNewUser ? <OnboardingStack /> : <MainTabs />) : <AuthStack />}
     </NavigationContainer>
   );
