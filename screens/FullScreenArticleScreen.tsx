@@ -148,7 +148,7 @@ export const FullScreenArticleScreen: React.FC<any> = ({ route, navigation }) =>
         <PressableScale style={styles.chromeBtn} activeScale={0.9} onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={22} color={colors.ink} />
         </PressableScale>
-        <Wordmark size={22} />
+        <Wordmark size={30} />
         <PressableScale style={styles.chromeBtn} activeScale={0.9}>
           <Icon name="ellipsis-horizontal" size={20} color={colors.ink} />
         </PressableScale>

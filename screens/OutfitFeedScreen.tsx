@@ -22,6 +22,10 @@ import { colors, spacing, fontFamily } from '../theme';
 
 const PAGE_SIZE = 20;
 
+// Breathing room left below the card so it ends higher above the tab bar
+// (card no longer fills the whole page — see renderOutfit).
+const CARD_BOTTOM_GAP = spacing.x64;
+
 export const OutfitFeedScreen: React.FC = () => {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -127,16 +131,21 @@ export const OutfitFeedScreen: React.FC = () => {
     if (h > 0 && h !== pageHeight) setPageHeight(h);
   };
 
-  const renderOutfit = ({ item }: { item: OutfitCardData }) => (
-    <View style={[styles.page, { height: pageHeight, paddingTop: headerOffset }]}>
-      <OutfitCard
-        outfit={item}
-        onPress={handleOutfitPress}
-        onLikeChange={handleLikeChange}
-        onSaveChange={handleSaveChange}
-      />
-    </View>
-  );
+  const renderOutfit = ({ item }: { item: OutfitCardData }) => {
+    // Card is shorter than the page so beige shows below it, above the tab bar.
+    const cardHeight = pageHeight > 0 ? pageHeight - headerOffset - CARD_BOTTOM_GAP : undefined;
+    return (
+      <View style={[styles.page, { height: pageHeight, paddingTop: headerOffset }]}>
+        <OutfitCard
+          outfit={item}
+          style={{ height: cardHeight, flex: 0 }}
+          onPress={handleOutfitPress}
+          onLikeChange={handleLikeChange}
+          onSaveChange={handleSaveChange}
+        />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>

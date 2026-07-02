@@ -26,6 +26,10 @@ import { colors, spacing, fontFamily } from '../theme';
 
 const PAGE_SIZE = 20;
 
+// Breathing room left below the card so it ends higher above the tab bar
+// (card no longer fills the whole page — see renderArticle).
+const CARD_BOTTOM_GAP = spacing.x64;
+
 export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -162,6 +166,9 @@ export const HomeScreen: React.FC = () => {
       extrapolate: 'clamp',
     });
 
+    // Card is shorter than the page so beige shows below it, above the tab bar.
+    const cardHeight = pageHeight > 0 ? pageHeight - headerOffset - CARD_BOTTOM_GAP : undefined;
+
     return (
       <Animated.View
         style={[
@@ -177,6 +184,7 @@ export const HomeScreen: React.FC = () => {
       >
         <ArticleCard
           article={item}
+          style={{ height: cardHeight, flex: 0 }}
           onLikeChange={handleLikeChange}
           onSaveChange={handleSaveChange}
           onPress={() =>

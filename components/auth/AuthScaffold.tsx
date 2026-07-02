@@ -49,7 +49,7 @@ export const AuthScaffold: React.FC<AuthScaffoldProps> = ({
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.logoWrap}>
-              <Wordmark size={30} />
+              <Wordmark size={44} />
             </View>
 
             <View style={styles.card}>

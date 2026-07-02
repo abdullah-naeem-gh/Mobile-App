@@ -20,7 +20,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onFilter, hasFilters = fal
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-      <Wordmark size={26} />
+      <Wordmark size={48} />
       {onFilter ? (
         <PressableScale
           onPress={onFilter}
