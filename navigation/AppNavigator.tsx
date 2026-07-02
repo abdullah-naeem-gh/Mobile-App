@@ -11,6 +11,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
@@ -69,6 +70,7 @@ const SavedStack = () => (
 const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
   </Stack.Navigator>
 );
 
