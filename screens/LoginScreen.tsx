@@ -1,27 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Animated,
-  StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// LoginScreen — email/password sign-in. Chrome comes from AuthScaffold;
+// this file owns the form state + the useAuth().signIn call.
+
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
+import { AuthScaffold } from '../components/auth/AuthScaffold';
+import { Button, Field } from '../components/ui';
+import { colors, fontFamily, spacing, radius } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
-const { width, height } = Dimensions.get('window');
-
 interface LoginScreenProps {
-  navigation: any;
+  navigation: { navigate: (screen: 'SignUp') => void; goBack: () => void };
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
@@ -31,342 +20,100 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const { signIn } = useAuth();
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-
-  useEffect(() => {
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
-
     setLoading(true);
-    setError(null); // Clear any previous errors
-    
+    setError(null);
     const { error: signInError } = await signIn(email, password);
     setLoading(false);
-
     if (signInError) {
       setError(signInError.message || 'Login failed. Please try again.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Platform-specific status bar */}
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#E8D5C4" 
-        translucent={Platform.OS === 'android'}
+    <AuthScaffold
+      title="Sign in to continue"
+      subtitle="Discover your perfect style and explore fashion brands."
+      footer={
+        <Pressable style={styles.switch} onPress={() => navigation.navigate('SignUp')}>
+          <Text style={styles.switchText}>
+            Don't have an account? <Text style={styles.switchLink}>Sign Up</Text>
+          </Text>
+        </Pressable>
+      }
+    >
+      <Field
+        label="Email"
+        placeholder="Enter your email"
+        value={email}
+        onChangeText={(t) => {
+          setEmail(t);
+          if (error) setError(null);
+        }}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
-      
-      {/* Beige background */}
-      <View style={styles.beigeBackground} />
-      
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Icon name="arrow-back" size={24} color="#000000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Welcome Back</Text>
-          </View>
+      <Field
+        label="Password"
+        placeholder="Enter your password"
+        value={password}
+        onChangeText={(t) => {
+          setPassword(t);
+          if (error) setError(null);
+        }}
+        secureTextEntry
+      />
 
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Animated.View 
-              style={[
-                styles.formContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [
-                    { translateY: slideAnim },
-                    { scale: scaleAnim }
-                  ],
-                },
-              ]}
-            >
-              <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeText}>Sign in to continue</Text>
-                <Text style={styles.welcomeSubtext}>
-                  Discover your perfect style and connect with fashion brands
-                </Text>
-              </View>
+      {error ? (
+        <View style={styles.errorBox}>
+          <Icon name="alert-circle-outline" size={20} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
-              <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.input}
-                      value={email}
-                      onChangeText={(text) => {
-                        setEmail(text);
-                        if (error) setError(null);
-                      }}
-                      placeholder="Enter your email"
-                      placeholderTextColor="#999999"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.input}
-                      value={password}
-                      onChangeText={(text) => {
-                        setPassword(text);
-                        if (error) setError(null);
-                      }}
-                      placeholder="Enter your password"
-                      placeholderTextColor="#999999"
-                      secureTextEntry
-                    />
-                  </View>
-                </View>
-
-                {error && (
-                  <View style={styles.errorContainer}>
-                    <Icon name="alert-circle-outline" size={20} color="#ff4444" />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </View>
-                )}
-
-                <TouchableOpacity
-                  style={styles.loginButton}
-                  onPress={handleLogin}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#000000" size="small" />
-                  ) : (
-                    <>
-                      <Text style={styles.loginButtonText}>Sign In</Text>
-                      <Icon name="arrow-forward" size={20} color="#000000" />
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('SignUp')}
-                  style={styles.switchContainer}
-                >
-                  <Text style={styles.switchText}>
-                    Don't have an account? 
-                  </Text>
-                  <Text style={styles.switchLink}>Sign up</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+      <Button
+        label="Sign In"
+        onPress={handleLogin}
+        loading={loading}
+        trailing={<Icon name="arrow-forward" size={20} color={colors.onCta} />}
+      />
+    </AuthScaffold>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  beigeBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.4,
-    backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 43,
-    borderBottomRightRadius: 43,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  header: {
+  errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
-    paddingTop: 12,
-    paddingBottom: 30,
-    zIndex: 1000,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginRight: 16,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    // Only add extra padding for Android
-    ...(Platform.OS === 'android' && {
-      paddingTop: 20,
-    }),
-  },
-  formContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 32,
-    marginHorizontal: 4,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  welcomeSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  welcomeText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  welcomeSubtext: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 10,
-  },
-  form: {
-    gap: 20,
-  },
-  inputContainer: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F3F3',
-    borderRadius: 15,
-    paddingHorizontal: 25,
-    height: 60,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000000',
-    padding: 0,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff5f5',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    backgroundColor: '#FFF5F5',
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#ffcccb',
-    gap: 8,
+    borderColor: '#FFD5D5',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   errorText: {
-    color: '#ff4444',
-    fontSize: 14,
-    fontWeight: '500',
     flex: 1,
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    color: colors.error,
   },
-  loginButton: {
-    backgroundColor: 'rgba(230,166,107,0.77)',
-    height: 60,
-    borderRadius: 15,
-    flexDirection: 'row',
+  switch: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    gap: 8,
-  },
-  loginButtonText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 4,
+    marginTop: spacing.sm,
   },
   switchText: {
-    fontSize: 16,
-    color: '#666666',
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.ink,
   },
   switchLink: {
-    fontSize: 16,
-    color: '#000000',
-    fontWeight: '600',
+    fontFamily: fontFamily.bold,
+    textDecorationLine: 'underline',
   },
 });

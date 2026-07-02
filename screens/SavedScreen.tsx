@@ -1,25 +1,29 @@
-import React, { useState, useEffect } from 'react';
+// SavedScreen — the Saved tab (also embedded in Profile). Shows a mosaic of
+// recent saves, "smart collections" derived client-side from the real saved
+// items (All / Articles / Outfits), and a grid of the current selection.
+// Keeps the Supabase load + unsave logic.
+//
+// TODO(backend): server-side smart collections (price-dropped, from followed
+// brands, user boards) once those exist.
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Image,
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Dimensions,
   ScrollView,
-  Platform,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-
-const { width, height } = Dimensions.get('window');
+import { SubHeader, PressableScale } from '../components/ui';
+import { colors, radius, spacing, fontFamily, shadows } from '../theme';
 
 interface SavedItem {
   id: string;
@@ -30,17 +34,13 @@ interface SavedItem {
     image_urls: string[];
     price: number;
     currency: string;
-    brands: {
-      name: string;
-    };
+    brands: { name: string };
   } | null;
   outfits?: {
     id: string;
     title: string;
     image_url: string;
-    users: {
-      username: string;
-    };
+    users: { username: string };
   } | null;
 }
 
@@ -48,133 +48,78 @@ interface SavedScreenProps {
   onBack: () => void;
 }
 
+type Tab = 'all' | 'articles' | 'outfits';
+
+const savedImage = (item: SavedItem): string | null =>
+  item.articles ? item.articles.image_urls?.[0] ?? null : item.outfits?.image_url ?? null;
+
 export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   const { user } = useAuth();
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'articles' | 'outfits'>('all');
-  // Add state for image loading that will be used by all grid items
-  const [imageLoadingStates, setImageLoadingStates] = useState<{[key: string]: boolean}>({});
+  const [selectedTab, setSelectedTab] = useState<Tab>('all');
 
-  useEffect(() => {
-    loadSavedItems();
-  }, [user]);
-
-  // Initialize loading states whenever saved items change
-  useEffect(() => {
-    if (savedItems && savedItems.length > 0) {
-      const newLoadingStates: {[key: string]: boolean} = {};
-      savedItems.forEach(item => {
-        if (imageLoadingStates[item.id] === undefined) {
-          newLoadingStates[item.id] = true;
-        }
-      });
-      
-      if (Object.keys(newLoadingStates).length > 0) {
-        setImageLoadingStates(prev => ({
-          ...prev,
-          ...newLoadingStates
-        }));
-      }
-    }
-  }, [savedItems]);
-
-  const loadSavedItems = async () => {
+  const loadSavedItems = useCallback(async () => {
     if (!user) return;
-
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('saves')
-        .select(`
-          id,
-          created_at,
-          article_id,
-          outfit_id
-        `)
+        .select('id, created_at, article_id, outfit_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error loading saved items:', error);
-        Alert.alert('Error', 'Failed to load saved items');
-        return;
-      }
-
-      const savedItemsWithDetails = await Promise.all(
-        (data || []).map(async (save) => {
-          const savedItem: SavedItem = {
-            id: save.id,
-            created_at: save.created_at,
-            articles: null,
-            outfits: null,
-          };
-
+      const hydrated = await Promise.all(
+        (data || []).map(async (save): Promise<SavedItem> => {
+          const item: SavedItem = { id: save.id, created_at: save.created_at, articles: null, outfits: null };
           if (save.article_id) {
-            const { data: articleData } = await supabase
+            const { data: a } = await supabase
               .from('articles')
-              .select(`
-                id,
-                title,
-                image_urls,
-                price,
-                currency,
-                brands!articles_brand_id_fkey (
-                  name
-                )
-              `)
+              .select('id, title, image_urls, price, currency, brands!articles_brand_id_fkey ( name )')
               .eq('id', save.article_id)
               .single();
-
-            if (articleData) {
-              savedItem.articles = {
-                id: articleData.id,
-                title: articleData.title,
-                image_urls: articleData.image_urls,
-                price: articleData.price,
-                currency: articleData.currency,
-                brands: Array.isArray(articleData.brands) ? articleData.brands[0] : articleData.brands,
+            if (a) {
+              item.articles = {
+                id: a.id,
+                title: a.title,
+                image_urls: a.image_urls,
+                price: a.price,
+                currency: a.currency,
+                brands: Array.isArray(a.brands) ? a.brands[0] : a.brands,
               };
             }
           }
-
           if (save.outfit_id) {
-            const { data: outfitData } = await supabase
+            const { data: o } = await supabase
               .from('outfits')
-              .select(`
-                id,
-                title,
-                image_url,
-                users!outfits_user_id_fkey (
-                  username
-                )
-              `)
+              .select('id, title, image_url, users!outfits_user_id_fkey ( username )')
               .eq('id', save.outfit_id)
               .single();
-
-            if (outfitData) {
-              savedItem.outfits = {
-                id: outfitData.id,
-                title: outfitData.title,
-                image_url: outfitData.image_url,
-                users: Array.isArray(outfitData.users) ? outfitData.users[0] : outfitData.users,
+            if (o) {
+              item.outfits = {
+                id: o.id,
+                title: o.title,
+                image_url: o.image_url,
+                users: Array.isArray(o.users) ? o.users[0] : o.users,
               };
             }
           }
-
-          return savedItem;
-        })
+          return item;
+        }),
       );
-
-      setSavedItems(savedItemsWithDetails);
-    } catch (error) {
-      console.error('Error loading saved items:', error);
+      setSavedItems(hydrated);
+    } catch {
       Alert.alert('Error', 'Failed to load saved items');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    loadSavedItems();
+  }, [loadSavedItems]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -183,488 +128,195 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   };
 
   const handleUnsave = async (saveId: string) => {
-    try {
-      const { error } = await supabase
-        .from('saves')
-        .delete()
-        .eq('id', saveId);
-
-      if (error) {
-        console.error('Error removing save:', error);
-        Alert.alert('Error', 'Failed to remove item from saved');
-      } else {
-        setSavedItems(items => items.filter(item => item.id !== saveId));
-      }
-    } catch (error) {
-      console.error('Error removing save:', error);
-      Alert.alert('Error', 'Failed to remove item from saved');
-    }
+    const { error } = await supabase.from('saves').delete().eq('id', saveId);
+    if (error) Alert.alert('Error', 'Failed to remove item from saved');
+    else setSavedItems((items) => items.filter((i) => i.id !== saveId));
   };
 
-  const getFilteredItems = () => {
-    switch (selectedTab) {
-      case 'articles':
-        return savedItems.filter(item => item.articles);
-      case 'outfits':
-        return savedItems.filter(item => item.outfits);
-      default:
-        return savedItems;
-    }
-  };
+  const articleCount = useMemo(() => savedItems.filter((i) => i.articles).length, [savedItems]);
+  const outfitCount = savedItems.length - articleCount;
+  const mosaic = useMemo(
+    () => savedItems.map(savedImage).filter(Boolean).slice(0, 5) as string[],
+    [savedItems],
+  );
 
-  const handleImageLoaded = (itemId: string) => {
-    setImageLoadingStates(prev => ({
-      ...prev,
-      [itemId]: false
-    }));
+  const filtered = useMemo(() => {
+    if (selectedTab === 'articles') return savedItems.filter((i) => i.articles);
+    if (selectedTab === 'outfits') return savedItems.filter((i) => i.outfits);
+    return savedItems;
+  }, [savedItems, selectedTab]);
+
+  const collections: { id: Tab; label: string; count: number }[] = [
+    { id: 'all', label: 'All saves', count: savedItems.length },
+    { id: 'articles', label: 'Articles', count: articleCount },
+    { id: 'outfits', label: 'Outfits', count: outfitCount },
+  ];
+
+  const openItem = (item: SavedItem) => {
+    const isArticle = !!item.articles;
+    const title = isArticle ? item.articles?.title : item.outfits?.title;
+    Alert.alert(isArticle ? 'Saved Article' : 'Saved Outfit', title || 'Untitled', [
+      { text: 'Remove', style: 'destructive', onPress: () => handleUnsave(item.id) },
+      { text: 'Close', style: 'cancel' },
+    ]);
   };
 
   const renderGridItem = ({ item }: { item: SavedItem }) => {
-    const isArticle = !!item.articles;
-    const imageUrl = isArticle 
-      ? (item.articles?.image_urls && item.articles.image_urls.length > 0 ? item.articles.image_urls[0] : null)
-      : item.outfits?.image_url;
-    
-    const imageId = item.id;
-    const isImageLoading = imageLoadingStates[imageId] !== false;
-    
+    const image = savedImage(item);
     return (
-      <TouchableOpacity 
+      <PressableScale
         style={styles.gridItem}
-        onPress={() => handleItemPress(item)}
-        onLongPress={() => handleLongPress(item)}
-        activeOpacity={0.8}
+        activeScale={0.97}
+        onPress={() => openItem(item)}
+        onLongPress={() => handleUnsave(item.id)}
       >
-        {imageUrl ? (
-          <>
-            {isImageLoading && (
-              <View style={styles.gridImageLoading}>
-                <ActivityIndicator size="small" color="#666666" />
-              </View>
-            )}
-            <Image 
-              source={{ uri: imageUrl }} 
-              style={styles.gridImage}
-              resizeMode="cover"
-              onLoad={() => handleImageLoaded(imageId)}
-              onError={() => handleImageLoaded(imageId)}
-            />
-          </>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.gridImage} resizeMode="cover" />
         ) : (
-          <View style={styles.gridImagePlaceholder}>
-            <Text style={styles.gridImagePlaceholderText}>No Image</Text>
+          <View style={styles.gridPlaceholder}>
+            <Icon name="image-outline" size={22} color={colors.muted} />
           </View>
         )}
-        
-        {isArticle && item.articles?.price && !isImageLoading && (
-          <View style={styles.priceOverlay}>
+        {item.articles?.price ? (
+          <View style={styles.priceTag}>
             <Text style={styles.priceText}>
               {item.articles.currency || 'PKR'} {item.articles.price}
             </Text>
           </View>
-        )}
-        
-        <View style={styles.saveIconOverlay}>
-          <Icon name="bookmark" size={12} color="#E8A853" />
-        </View>
-      </TouchableOpacity>
+        ) : null}
+      </PressableScale>
     );
   };
-
-  const handleItemPress = (item: SavedItem) => {
-    const isArticle = !!item.articles;
-    const title = isArticle ? item.articles?.title : item.outfits?.title;
-    const creator = isArticle ? item.articles?.brands?.name : item.outfits?.users?.username;
-    
-    Alert.alert(
-      isArticle ? 'Saved Article' : 'Saved Outfit',
-      `${title || 'Untitled'}\nBy: ${creator || 'Unknown'}\n\nSaved: ${new Date(item.created_at).toLocaleDateString()}`,
-      [
-        { text: 'View Details', onPress: () => {
-          console.log(`Navigate to ${isArticle ? 'article' : 'outfit'} details:`, isArticle ? item.articles?.id : item.outfits?.id);
-        }},
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  };
-
-  const handleLongPress = (item: SavedItem) => {
-    const isArticle = !!item.articles;
-    const title = isArticle ? item.articles?.title : item.outfits?.title;
-    
-    Alert.alert(
-      'Remove from Saved',
-      `Remove "${title || 'Untitled'}" from your saved items?`,
-      [
-        { text: 'Remove', style: 'destructive', onPress: () => handleUnsave(item.id) },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        {/* Platform-specific status bar */}
-        <StatusBar 
-          barStyle="dark-content" 
-          backgroundColor="#E8D5C4" 
-          translucent={Platform.OS === 'android'}
-        />
-        
-        <View style={styles.beigeBackground} />
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <Icon name="arrow-back" size={24} color="#000000" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Saved Items</Text>
-            <View style={styles.placeholder} />
-          </View>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#000000" />
-            <Text style={styles.loadingText}>Loading saved items...</Text>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      {/* Platform-specific status bar */}
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#E8D5C4" 
-        translucent={Platform.OS === 'android'}
-      />
-      
-      <View style={styles.beigeBackground} />
-      
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#000000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Saved Items</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SubHeader title="Saved" onBack={onBack} />
 
-        <ScrollView 
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#000000"
-              colors={["#000000"]}
-            />
-          }
-        >
-          {/* Content Selector Card */}
-          <View style={styles.contentSelectorCard}>
-            <TouchableOpacity
-              style={[styles.contentTab, selectedTab === 'all' && styles.activeContentTab]}
-              onPress={() => setSelectedTab('all')}
-            >
-              <Icon 
-                name="bookmark" 
-                size={16} 
-                color={selectedTab === 'all' ? '#000000' : '#666666'} 
-              />
-              <Text style={[styles.contentTabText, selectedTab === 'all' && styles.activeContentTabText]}>
-                All ({savedItems.length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.contentTab, selectedTab === 'articles' && styles.activeContentTab]}
-              onPress={() => setSelectedTab('articles')}
-            >
-              <Icon 
-                name="pricetag" 
-                size={16} 
-                color={selectedTab === 'articles' ? '#000000' : '#666666'} 
-              />
-              <Text style={[styles.contentTabText, selectedTab === 'articles' && styles.activeContentTabText]}>
-                Articles ({savedItems.filter(item => item.articles).length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.contentTab, selectedTab === 'outfits' && styles.activeContentTab]}
-              onPress={() => setSelectedTab('outfits')}
-            >
-              <Icon 
-                name="shirt" 
-                size={16} 
-                color={selectedTab === 'outfits' ? '#000000' : '#666666'} 
-              />
-              <Text style={[styles.contentTabText, selectedTab === 'outfits' && styles.activeContentTabText]}>
-                Outfits ({savedItems.filter(item => item.outfits).length})
-              </Text>
-            </TouchableOpacity>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={colors.ink} />
           </View>
-
-          {/* Content Card */}
-          <View style={styles.contentCard}>
-            <Text style={styles.contentCardTitle}>
-              {selectedTab === 'all' ? 'All Saved Items' : 
-               selectedTab === 'articles' ? 'Saved Articles' : 'Saved Outfits'}
-            </Text>
-            
-            {getFilteredItems().length > 0 ? (
-              <FlatList
-                data={getFilteredItems()}
-                renderItem={renderGridItem}
-                numColumns={3}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.gridContainer}
-                columnWrapperStyle={getFilteredItems().length > 0 ? styles.gridRow : undefined}
-                scrollEnabled={false}
-              />
-            ) : (
-              <View style={styles.emptyContentContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Icon name="bookmark-outline" size={32} color="#666666" />
+        ) : savedItems.length === 0 ? (
+          <View style={styles.centered}>
+            <Icon name="bookmark-outline" size={44} color={colors.tag} />
+            <Text style={styles.emptyText}>Nothing saved yet</Text>
+            <Text style={styles.emptySub}>Bookmark articles and outfits to find them here</Text>
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
+            }
+          >
+            {/* Mosaic of recent saves */}
+            {mosaic.length > 0 ? (
+              <View style={styles.mosaic}>
+                <View style={styles.mosaicLead}>
+                  <Image source={{ uri: mosaic[0] }} style={styles.mosaicImage} resizeMode="cover" />
                 </View>
-                <Text style={styles.emptyContentTitle}>No saved items</Text>
-                <Text style={styles.emptyContentSubtitle}>
-                  Items you save will appear here. Start exploring and save items for later!
-                </Text>
+                <View style={styles.mosaicSide}>
+                  {mosaic.slice(1, 5).map((uri, i) => (
+                    <Image key={i} source={{ uri }} style={styles.mosaicThumb} resizeMode="cover" />
+                  ))}
+                </View>
               </View>
-            )}
-          </View>
+            ) : null}
 
-          <View style={styles.bottomSpace} />
-        </ScrollView>
+            <Text style={styles.countText}>{savedItems.length} items saved</Text>
+
+            {/* Smart collections */}
+            <Text style={styles.sectionTitle}>Collections</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.collectionsRow}
+            >
+              {collections.map((c) => (
+                <PressableScale
+                  key={c.id}
+                  activeScale={0.97}
+                  onPress={() => setSelectedTab(c.id)}
+                  style={[styles.collectionCard, selectedTab === c.id && styles.collectionCardActive]}
+                >
+                  <Text style={styles.collectionLabel}>{c.label}</Text>
+                  <Text style={styles.collectionCount}>{c.count} items</Text>
+                </PressableScale>
+              ))}
+            </ScrollView>
+
+            {/* Grid of the selected collection */}
+            <FlatList
+              data={filtered}
+              renderItem={renderGridItem}
+              keyExtractor={(item) => item.id}
+              numColumns={3}
+              scrollEnabled={false}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.grid}
+            />
+            <View style={styles.bottomSpace} />
+          </ScrollView>
+        )}
       </SafeAreaView>
     </View>
   );
 };
 
+const GAP = spacing.sm;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
+  container: { flex: 1, backgroundColor: colors.bg },
+  safeArea: { flex: 1 },
+  scroll: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.xl },
+  emptyText: { fontFamily: fontFamily.bold, fontSize: 18, color: colors.ink },
+  emptySub: { fontFamily: fontFamily.regular, fontSize: 14, color: colors.muted, textAlign: 'center' },
+
+  mosaic: { flexDirection: 'row', gap: GAP, height: 200, marginTop: spacing.sm },
+  mosaicLead: { flex: 2, borderRadius: radius.card, overflow: 'hidden', backgroundColor: colors.line },
+  mosaicImage: { width: '100%', height: '100%' },
+  mosaicSide: { flex: 1, gap: GAP },
+  mosaicThumb: { flex: 1, borderRadius: radius.card, backgroundColor: colors.line },
+
+  countText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink, marginTop: spacing.md },
+  sectionTitle: { fontFamily: fontFamily.bold, fontSize: 16, color: colors.ink, marginTop: spacing.xl, marginBottom: spacing.md },
+
+  collectionsRow: { gap: spacing.s10, paddingRight: spacing.lg },
+  collectionCard: {
+    width: 140,
+    borderRadius: radius.input,
+    backgroundColor: colors.panel,
+    padding: spacing.md,
+    gap: spacing.xs,
+    ...shadows.hairline,
   },
-  beigeBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 200, // Increased from 180 for better coverage
-    backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 43,
-    borderBottomRightRadius: 43,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
-    paddingTop: 12,
-    paddingBottom: 20,
-    zIndex: 1000,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
-  },
-  placeholder: {
-    width: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 80,
-  },
-  loadingText: {
-    color: '#000000',
-    fontSize: 16,
-    marginTop: 16,
-  },
-  contentSelectorCard: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 8,
-    marginBottom: 16,
-    flexDirection: 'row',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  contentTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-  },
-  activeContentTab: {
-    backgroundColor: '#E8D5C4',
-  },
-  contentTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-    marginLeft: 8,
-  },
-  activeContentTabText: {
-    color: '#000000',
-  },
-  contentCard: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  contentCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  gridContainer: {
-    paddingBottom: 0,
-  },
-  gridRow: {
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
+  collectionCardActive: { borderWidth: 2, borderColor: colors.ink },
+  collectionLabel: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
+  collectionCount: { fontFamily: fontFamily.regular, fontSize: 11, color: colors.muted },
+
+  grid: { marginTop: spacing.xl, gap: GAP },
+  gridRow: { gap: GAP },
   gridItem: {
-    width: (width - 80) / 3, // Account for card padding and gaps
-    aspectRatio: 1,
-    borderRadius: 12,
+    flex: 1 / 3,
+    aspectRatio: 3 / 4,
+    borderRadius: radius.card,
     overflow: 'hidden',
-    backgroundColor: '#f8f8f8',
-    position: 'relative',
+    backgroundColor: colors.line,
   },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-  },
-  gridImageLoading: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    zIndex: 1,
-  },
-  gridImagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gridImagePlaceholderText: {
-    color: '#666666',
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  priceOverlay: {
+  gridImage: { width: '100%', height: '100%' },
+  gridPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  priceTag: {
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
-  priceText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  saveIconOverlay: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  saveIcon: {
-    fontSize: 12,
-  },
-  emptyContentContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyContentTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyContentSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 20,
-    lineHeight: 20,
-  },
-  bottomSpace: {
-    height: 40,
-  },
+  priceText: { fontFamily: fontFamily.bold, fontSize: 10, color: '#fff' },
+  bottomSpace: { height: spacing.xxl },
 });

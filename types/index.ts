@@ -50,6 +50,45 @@ export interface User {
   created_at: string;
 }
 
+/**
+ * The shape `outfitService.getOutfits` returns for the feed/cards — distinct
+ * from the raw `Outfit` row above. It normalizes the single `image_url` into
+ * an `image_urls` array and flattens either the posting user OR brand into a
+ * single `user` object. UI cards bind to THIS shape, not the raw `Outfit`.
+ */
+export interface OutfitCardArticle {
+  x_position: number;
+  y_position: number;
+  articles: {
+    id: string;
+    title: string;
+    price?: number;
+    currency?: string;
+    image_urls?: string[];
+    purchase_url?: string;
+  };
+}
+
+export interface OutfitCardUser {
+  id: string;
+  username: string;
+  profile_image_url?: string;
+}
+
+export interface OutfitCardData {
+  id: string;
+  image_urls: string[];
+  description?: string;
+  user: OutfitCardUser;
+  likes_count: number;
+  saves_count: number;
+  is_liked: boolean;
+  is_saved: boolean;
+  created_at: string;
+  style_tags?: string[];
+  outfit_articles?: OutfitCardArticle[];
+}
+
 export interface Outfit {
   id: string;
   user_id: string;

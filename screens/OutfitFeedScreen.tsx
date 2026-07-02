@@ -1,61 +1,63 @@
+// OutfitFeedScreen — Outfits tab. Paged, Reels-style feed of user/brand
+// looks. Same responsive page-measuring approach as HomeScreen; keeps the
+// outfitService wiring (getOutfits / toggleLike / toggleSave).
+
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   Alert,
-  Dimensions,
-  Image,
-  Platform,
-  StatusBar,
+  LayoutChangeEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from '@expo/vector-icons/Ionicons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppHeader, BeigePanel } from '../components/ui';
 import { OutfitCard } from '../components/OutfitCard';
 import { outfitService } from '../services/outfitService';
 import { useAuth } from '../contexts/AuthContext';
+import { OutfitCardData } from '../types';
+import { colors, spacing, fontFamily } from '../theme';
 
-const { width, height } = Dimensions.get('window');
+const PAGE_SIZE = 20;
+
+// Breathing room left below the card so it ends higher above the tab bar
+// (card no longer fills the whole page — see renderOutfit).
+const CARD_BOTTOM_GAP = spacing.x64;
 
 export const OutfitFeedScreen: React.FC = () => {
   const { user } = useAuth();
-  const [outfits, setOutfits] = useState<any[]>([]);
+  const insets = useSafeAreaInsets();
+  const [outfits, setOutfits] = useState<OutfitCardData[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [pageHeight, setPageHeight] = useState(0);
 
-  const loadOutfits = useCallback(async (
-    currentPage: number = 0,
-    reset: boolean = false
-  ) => {
-    if (loading && !reset) return;
-    
-    setLoading(true);
-    
-    const { data, error } = await outfitService.getOutfits({
-      limit: 20,
-      offset: currentPage * 20,
-      currentUserId: user?.id,
-    });
-    
-    if (error) {
-      Alert.alert('Error', error);
-    } else {
-      const outfits = data || [];
-      if (reset || currentPage === 0) {
-        setOutfits(outfits);
+  const headerOffset = insets.top + 60;
+
+  const loadOutfits = useCallback(
+    async (currentPage: number, reset: boolean) => {
+      if (loading && !reset) return;
+      setLoading(true);
+      const { data, error } = await outfitService.getOutfits({
+        limit: PAGE_SIZE,
+        offset: currentPage * PAGE_SIZE,
+        currentUserId: user?.id,
+      });
+      if (error) {
+        Alert.alert('Error', error);
       } else {
-        setOutfits(prev => [...prev, ...outfits]);
+        const next = (data ?? []) as OutfitCardData[];
+        setOutfits((prev) => (reset || currentPage === 0 ? next : [...prev, ...next]));
+        setHasMore(next.length === PAGE_SIZE);
       }
-      setHasMore(outfits.length === 20);
-    }
-    
-    setLoading(false);
-  }, [loading]);
+      setLoading(false);
+    },
+    [loading, user?.id],
+  );
 
   useEffect(() => {
     loadOutfits(0, true);
@@ -76,41 +78,27 @@ export const OutfitFeedScreen: React.FC = () => {
     }
   }, [hasMore, loading, page, loadOutfits]);
 
-  const handleOutfitPress = (outfit: any) => {
+  const handleOutfitPress = (outfit: OutfitCardData) => {
     Alert.alert('Outfit Details', `Viewing outfit by ${outfit.user.username}`);
   };
 
   const handleLikeChange = async (outfitId: string, isLiked: boolean) => {
     if (!user) return;
-
-    // Optimistically update UI
-    setOutfits(prev =>
-      prev.map(outfit =>
-        outfit.id === outfitId
-          ? {
-              ...outfit,
-              is_liked: isLiked,
-              likes_count: outfit.likes_count + (isLiked ? 1 : -1),
-            }
-          : outfit
-      )
+    setOutfits((prev) =>
+      prev.map((o) =>
+        o.id === outfitId
+          ? { ...o, is_liked: isLiked, likes_count: o.likes_count + (isLiked ? 1 : -1) }
+          : o,
+      ),
     );
-
-    // Make API call using toggle method
     const result = await outfitService.toggleLike(outfitId);
-
     if (!result.success) {
-      // Revert optimistic update on failure
-      setOutfits(prev =>
-        prev.map(outfit =>
-          outfit.id === outfitId
-            ? {
-                ...outfit,
-                is_liked: !isLiked,
-                likes_count: outfit.likes_count + (isLiked ? -1 : 1),
-              }
-            : outfit
-        )
+      setOutfits((prev) =>
+        prev.map((o) =>
+          o.id === outfitId
+            ? { ...o, is_liked: !isLiked, likes_count: o.likes_count + (isLiked ? -1 : 1) }
+            : o,
+        ),
       );
       Alert.alert('Error', result.error || 'Failed to update like');
     }
@@ -118,98 +106,86 @@ export const OutfitFeedScreen: React.FC = () => {
 
   const handleSaveChange = async (outfitId: string, isSaved: boolean) => {
     if (!user) return;
-
-    // Optimistically update UI
-    setOutfits(prev =>
-      prev.map(outfit =>
-        outfit.id === outfitId
-          ? {
-              ...outfit,
-              is_saved: isSaved,
-              saves_count: outfit.saves_count + (isSaved ? 1 : -1),
-            }
-          : outfit
-      )
+    setOutfits((prev) =>
+      prev.map((o) =>
+        o.id === outfitId
+          ? { ...o, is_saved: isSaved, saves_count: o.saves_count + (isSaved ? 1 : -1) }
+          : o,
+      ),
     );
-
-    // Make API call using toggle method
     const result = await outfitService.toggleSave(outfitId);
-
     if (!result.success) {
-      // Revert optimistic update on failure
-      setOutfits(prev =>
-        prev.map(outfit =>
-          outfit.id === outfitId
-            ? {
-                ...outfit,
-                is_saved: !isSaved,
-                saves_count: outfit.saves_count + (isSaved ? -1 : 1),
-              }
-            : outfit
-        )
+      setOutfits((prev) =>
+        prev.map((o) =>
+          o.id === outfitId
+            ? { ...o, is_saved: !isSaved, saves_count: o.saves_count + (isSaved ? -1 : 1) }
+            : o,
+        ),
       );
       Alert.alert('Error', result.error || 'Failed to update save');
     }
   };
 
-  const renderOutfit = ({ item }: { item: any }) => (
-    <OutfitCard
-      outfit={item}
-      onPress={handleOutfitPress}
-      onLikeChange={handleLikeChange}
-      onSaveChange={handleSaveChange}
-    />
-  );
+  const onListLayout = (e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h > 0 && h !== pageHeight) setPageHeight(h);
+  };
+
+  const renderOutfit = ({ item }: { item: OutfitCardData }) => {
+    // Card is shorter than the page so beige shows below it, above the tab bar.
+    const cardHeight = pageHeight > 0 ? pageHeight - headerOffset - CARD_BOTTOM_GAP : undefined;
+    return (
+      <View style={[styles.page, { height: pageHeight, paddingTop: headerOffset }]}>
+        <OutfitCard
+          outfit={item}
+          style={{ height: cardHeight, flex: 0 }}
+          onPress={handleOutfitPress}
+          onLikeChange={handleLikeChange}
+          onSaveChange={handleSaveChange}
+        />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Platform-specific status bar */}
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#E8D5C4" 
-        translucent={Platform.OS === 'android'}
-      />
-      
-      {/* Static beige background */}
-      <View style={styles.beigeBackground} />
-      
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Image 
-            source={require('../assets/logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Icon name="search-outline" size={20} color="#000000" />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <BeigePanel height={headerOffset + spacing.xl} />
 
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
         <FlatList
           data={outfits}
           renderItem={renderOutfit}
           keyExtractor={(item) => item.id}
-          pagingEnabled={true}
+          onLayout={onListLayout}
+          pagingEnabled
           showsVerticalScrollIndicator={false}
-          snapToInterval={height * 0.9}
+          snapToInterval={pageHeight || undefined}
           snapToAlignment="start"
           decelerationRate="fast"
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
+          getItemLayout={(_, index) => ({
+            length: pageHeight,
+            offset: pageHeight * index,
+            index,
+          })}
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
+          onEndReachedThreshold={0.4}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
+          }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No outfits found</Text>
-              <Text style={styles.emptySubText}>Follow users to see their outfit posts</Text>
-            </View>
+            pageHeight > 0 && !loading ? (
+              <View style={[styles.empty, { height: pageHeight, paddingTop: headerOffset }]}>
+                <Text style={styles.emptyText}>No outfits found</Text>
+                <Text style={styles.emptySub}>Follow users to see their outfit posts</Text>
+              </View>
+            ) : null
           }
         />
       </SafeAreaView>
+
+      <View style={styles.header} pointerEvents="box-none">
+        <AppHeader />
+      </View>
     </View>
   );
 };
@@ -217,18 +193,7 @@ export const OutfitFeedScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  beigeBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 661,
-    backgroundColor: '#E8D5C4',
-    borderBottomLeftRadius: 43,
-    borderBottomRightRadius: 43,
-    opacity: 0.95,
+    backgroundColor: colors.bg,
   },
   safeArea: {
     flex: 1,
@@ -239,55 +204,26 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  page: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  empty: {
     alignItems: 'center',
-    paddingHorizontal: 15,
-    // Safe area inset is handled by SafeAreaView; this is just visual breathing room
-    paddingTop: 12,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
-  },
-  logo: {
-    width: width * 0.55,
-    height: width * 0.18,
-    maxWidth: 220,
-    maxHeight: 72,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    padding: 8,
-    marginRight: 10,
-    borderRadius: 16,
-  },
-  listContainer: {
-    flexGrow: 1,
-    // Only add padding for Android, keep iOS as is
-    ...(Platform.OS === 'android' && {
-      paddingTop: 90,
-    }),
-  },
-  emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    height: height - 200, // Adjust for header
-    // Only add padding for Android, keep iOS as is
-    ...(Platform.OS === 'android' && {
-      paddingTop: 90,
-    }),
+    gap: spacing.sm,
   },
   emptyText: {
+    fontFamily: fontFamily.bold,
     fontSize: 18,
-    color: '#000000',
-    marginBottom: 8,
+    color: colors.ink,
   },
-  emptySubText: {
+  emptySub: {
+    fontFamily: fontFamily.regular,
     fontSize: 14,
-    color: '#666666',
+    color: colors.muted,
   },
 });

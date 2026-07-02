@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../hooks/useProfile';
@@ -21,6 +22,7 @@ const occasionOptions = ['casual', 'formal', 'party', 'work', 'sport', 'beach', 
 
 export const OnboardingScreen = () => {
   const { completeOnboarding, session } = useAuth();
+  const navigation = useNavigation<any>();
   const { profile, loading, error, userRole } = useProfile();
   const [userType, setUserType] = useState<'consumer' | 'brand' | null>(null);
   const [loadingState, setLoading] = useState(false);
@@ -76,7 +78,9 @@ export const OnboardingScreen = () => {
         });
 
       if (error) throw error;
-      await completeOnboarding();
+      // Consumers get the style quiz (taste seeding) before entering the feed.
+      // The quiz completes onboarding when finished/skipped.
+      navigation.navigate('StyleQuiz');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

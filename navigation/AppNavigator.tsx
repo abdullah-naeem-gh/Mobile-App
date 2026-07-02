@@ -7,10 +7,13 @@ import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { StyleQuizScreen } from '../screens/StyleQuizScreen';
+import { BrandProfileScreen } from '../screens/BrandProfileScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
@@ -32,6 +35,7 @@ const AuthStack = () => (
 const OnboardingStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+    <Stack.Screen name="StyleQuiz" component={StyleQuizScreen} />
   </Stack.Navigator>
 );
 
@@ -40,6 +44,7 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="HomeScreen" component={HomeScreen} />
     <Stack.Screen name="FullScreenArticle" component={FullScreenArticleScreen} />
+    <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
   </Stack.Navigator>
 );
 
@@ -69,6 +74,7 @@ const SavedStack = () => (
 const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
   </Stack.Navigator>
 );
 
@@ -152,33 +158,6 @@ const LoadingScreen = () => (
   </View>
 );
 
-// Debug component to show auth state (remove in production)
-// const DebugInfo = () => {
-//   const { session, isNewUser } = useAuth();
-  
-//   if (__DEV__) {
-//     return (
-//       <View style={{ 
-//         position: 'absolute', 
-//         top: 50, 
-//         right: 10, 
-//         backgroundColor: 'rgba(255,255,255,0.8)', 
-//         padding: 5, 
-//         borderRadius: 5,
-//         zIndex: 1000 
-//       }}>
-//         <Text style={{ fontSize: 10, color: 'black' }}>
-//           Session: {session ? '✓' : '✗'}
-//         </Text>
-//         <Text style={{ fontSize: 10, color: 'black' }}>
-//           New User: {isNewUser ? '✓' : '✗'}
-//         </Text>
-//       </View>
-//     );
-//   }
-//   return null;
-// };
-
 export const AppNavigator = () => {
   const { session, loading, isNewUser } = useAuth();
 
@@ -188,7 +167,6 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {/* <DebugInfo /> */}
       {session ? (isNewUser ? <OnboardingStack /> : <MainTabs />) : <AuthStack />}
     </NavigationContainer>
   );

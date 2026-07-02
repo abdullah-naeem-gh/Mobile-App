@@ -1,20 +1,26 @@
+// FiltersModal — article filters as a bottom sheet. Re-skinned to the design
+// (drag handle, sectioned chips, amber Apply) while preserving all filter
+// logic: search, gender, category, colors, sizes, and the DB-backed price
+// slider. Emits the same ArticleFilters shape HomeScreen expects.
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   Modal,
-  TextInput,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { CategoryType, GenderType } from '../types';
 import { ArticleFilters, articleService } from '../services/articleService';
+import { Input, Section } from './ui';
+import { colors, radius, spacing, fontFamily, shadows } from '../theme';
 
 interface FiltersModalProps {
   visible: boolean;
@@ -23,21 +29,42 @@ interface FiltersModalProps {
   currentFilters: ArticleFilters;
 }
 
-const categories: CategoryType[] = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags'];
-const genders: GenderType[] = ['male', 'female', 'unisex'];
-
-// Common clothing colors
-const colors = [
-  'black', 'white', 'gray', 'navy', 'blue', 'red', 'pink', 'green', 
-  'yellow', 'orange', 'purple', 'brown', 'beige', 'cream', 'gold', 'silver'
+const CATEGORY_OPTIONS: CategoryType[] = [
+  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'accessories', 'bags',
 ];
-
-// Common clothing sizes  
-const sizes = [
+const GENDER_OPTIONS: GenderType[] = ['male', 'female', 'unisex'];
+const COLOR_OPTIONS = [
+  'black', 'white', 'gray', 'navy', 'blue', 'red', 'pink', 'green',
+  'yellow', 'orange', 'purple', 'brown', 'beige', 'cream', 'gold', 'silver',
+];
+const SIZE_OPTIONS = [
   'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
   '28', '30', '32', '34', '36', '38', '40', '42', '44', '46',
-  '6', '7', '8', '9', '10', '11', '12'
+  '6', '7', '8', '9', '10', '11', '12',
 ];
+
+// Approximate swatch colors for the color chips.
+const SWATCH: Record<string, string> = {
+  black: '#000000', white: '#FFFFFF', gray: '#9E9E9E', navy: '#1F2A44',
+  blue: '#3B6BE6', red: '#D64B4B', pink: '#E8A0B4', green: '#5B8C4A',
+  yellow: '#E8C653', orange: '#E08A3C', purple: '#7A5AA8', brown: '#8A5A3C',
+  beige: '#E8D5C4', cream: '#FFF8F0', gold: '#C9A24B', silver: '#C7C7CC',
+};
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const FilterChip: React.FC<{ label: string; active: boolean; onPress: () => void }> = ({
+  label,
+  active,
+  onPress,
+}) => (
+  <Pressable
+    onPress={onPress}
+    style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
+  >
+    <Text style={[styles.chipText, { color: active ? colors.onDark : colors.ink }]}>{label}</Text>
+  </Pressable>
+);
 
 export const FiltersModal: React.FC<FiltersModalProps> = ({
   visible,
@@ -45,100 +72,57 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
   onApplyFilters,
   currentFilters,
 }) => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState(currentFilters.search || '');
   const [selectedGender, setSelectedGender] = useState<GenderType | undefined>(currentFilters.gender);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | undefined>(currentFilters.category);
   const [selectedColors, setSelectedColors] = useState<string[]>(currentFilters.colors || []);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(currentFilters.sizes || []);
-  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
+  const [priceRange, setPriceRange] = useState({
     min: currentFilters.priceRange?.min || 0,
     max: currentFilters.priceRange?.max || 100000,
   });
-  const [dbPriceRange, setDbPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
+  const [dbPriceRange, setDbPriceRange] = useState({ min: 0, max: 100000 });
   const [priceRangeLoaded, setPriceRangeLoaded] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      // Reset form to current filters when modal opens
-      setSearchQuery(currentFilters.search || '');
-      setSelectedGender(currentFilters.gender);
-      setSelectedCategory(currentFilters.category);
-      setSelectedColors(currentFilters.colors || []);
-      setSelectedSizes(currentFilters.sizes || []);
-      
-      // Load price range from database if not already loaded
-      if (!priceRangeLoaded) {
-        loadPriceRange();
-      }
-      
-      // Set current price range or use db range
-      if (currentFilters.priceRange) {
-        setPriceRange(currentFilters.priceRange);
-      } else if (priceRangeLoaded) {
-        setPriceRange(dbPriceRange);
-      }
-    }
+    if (!visible) return;
+    setSearchQuery(currentFilters.search || '');
+    setSelectedGender(currentFilters.gender);
+    setSelectedCategory(currentFilters.category);
+    setSelectedColors(currentFilters.colors || []);
+    setSelectedSizes(currentFilters.sizes || []);
+    if (!priceRangeLoaded) loadPriceRange();
+    if (currentFilters.priceRange) setPriceRange(currentFilters.priceRange);
+    else if (priceRangeLoaded) setPriceRange(dbPriceRange);
   }, [visible, currentFilters, priceRangeLoaded, dbPriceRange]);
 
   const loadPriceRange = async () => {
-    try {
-      const result = await articleService.getPriceRange();
-      if (result.success && result.data) {
-        setDbPriceRange(result.data);
-        if (!currentFilters.priceRange) {
-          setPriceRange(result.data);
-        }
-        setPriceRangeLoaded(true);
-      } else {
-        console.error('Failed to load price range:', result.error);
-        // Set default values if API fails
-        const defaultRange = { min: 0, max: 100000 };
-        setDbPriceRange(defaultRange);
-        setPriceRange(defaultRange);
-        setPriceRangeLoaded(true);
-      }
-    } catch (error) {
-      console.error('Error loading price range:', error);
-      // Set default values on error
-      const defaultRange = { min: 0, max: 100000 };
-      setDbPriceRange(defaultRange);
-      setPriceRange(defaultRange);
-      setPriceRangeLoaded(true);
-    }
+    const result = await articleService.getPriceRange();
+    const range = result.success && result.data ? result.data : { min: 0, max: 100000 };
+    setDbPriceRange(range);
+    if (!currentFilters.priceRange) setPriceRange(range);
+    setPriceRangeLoaded(true);
   };
 
-  const handleColorToggle = (color: string) => {
-    setSelectedColors(prev => 
-      prev.includes(color) 
-        ? prev.filter(c => c !== color)
-        : [...prev, color]
-    );
-  };
+  const toggle = (list: string[], value: string): string[] =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
-  const handleSizeToggle = (size: string) => {
-    setSelectedSizes(prev => 
-      prev.includes(size) 
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
-    );
-  };
+  const priceActive = priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max;
 
   const handleApply = () => {
-    const filters: ArticleFilters = {
+    onApplyFilters({
       search: searchQuery.trim() || undefined,
       gender: selectedGender,
       category: selectedCategory,
       colors: selectedColors.length > 0 ? selectedColors : undefined,
       sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
-      priceRange: (priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max) 
-        ? priceRange 
-        : undefined,
-    };
-    onApplyFilters(filters);
+      priceRange: priceActive ? priceRange : undefined,
+    });
     onClose();
   };
 
-  const handleClear = () => {
+  const handleReset = () => {
     setSearchQuery('');
     setSelectedGender(undefined);
     setSelectedCategory(undefined);
@@ -147,509 +131,255 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
     setPriceRange(dbPriceRange);
   };
 
-  const hasActiveFilters = searchQuery.trim() || selectedGender || selectedCategory || 
-                          selectedColors.length > 0 || selectedSizes.length > 0 ||
-                          (priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max);
-
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView 
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.title}>Filters</Text>
-            <TouchableOpacity onPress={handleClear} style={styles.clearAllButton}>
-              <Text style={styles.clearAllText}>Clear</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Search */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Search</Text>
-              <View style={styles.searchInputContainer}>
-                <Ionicons name="search" size={20} color="#666" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search articles..."
-                  placeholderTextColor="#999"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => setSearchQuery('')}
-                    style={styles.clearSearchButton}
-                  >
-                    <Ionicons name="close-circle" size={20} color="#666" />
-                  </TouchableOpacity>
-                )}
-              </View>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={styles.sheetWrap} pointerEvents="box-none">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.sheet}>
+            <View style={styles.handle} />
+            <View style={styles.headerRow}>
+              <Text style={styles.title}>Filters</Text>
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Ionicons name="close" size={24} color={colors.ink} />
+              </Pressable>
             </View>
 
-            {/* Price Range */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Price Range</Text>
-                {(priceRange.min !== dbPriceRange.min || priceRange.max !== dbPriceRange.max) && (
-                  <View style={styles.activeFilterIndicator}>
-                    <Text style={styles.activeFilterText}>Active</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.priceRangeContainer}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Input
+                placeholder="Search articles, brands…"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                trailing={<Ionicons name="search" size={18} color={colors.muted} />}
+                containerStyle={styles.search}
+              />
+
+              <Section title="Gender">
+                <View style={styles.chipRow}>
+                  {GENDER_OPTIONS.map((g) => (
+                    <FilterChip
+                      key={g}
+                      label={cap(g)}
+                      active={selectedGender === g}
+                      onPress={() => setSelectedGender(selectedGender === g ? undefined : g)}
+                    />
+                  ))}
+                </View>
+              </Section>
+
+              <Section title="Category">
+                <View style={styles.chipRow}>
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <FilterChip
+                      key={c}
+                      label={cap(c)}
+                      active={selectedCategory === c}
+                      onPress={() => setSelectedCategory(selectedCategory === c ? undefined : c)}
+                    />
+                  ))}
+                </View>
+              </Section>
+
+              <Section title="Colors">
+                <View style={styles.chipRow}>
+                  {COLOR_OPTIONS.map((c) => {
+                    const active = selectedColors.includes(c);
+                    return (
+                      <Pressable
+                        key={c}
+                        onPress={() => setSelectedColors((prev) => toggle(prev, c))}
+                        style={[styles.colorChip, active && styles.colorChipActive]}
+                      >
+                        <View style={[styles.swatch, { backgroundColor: SWATCH[c] ?? colors.fill }]} />
+                        <Text style={styles.colorChipText}>{cap(c)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Section>
+
+              <Section title="Sizes">
+                <View style={styles.chipRow}>
+                  {SIZE_OPTIONS.map((s) => (
+                    <FilterChip
+                      key={s}
+                      label={s}
+                      active={selectedSizes.includes(s)}
+                      onPress={() => setSelectedSizes((prev) => toggle(prev, s))}
+                    />
+                  ))}
+                </View>
+              </Section>
+
+              <Section title="Price range">
                 <View style={styles.priceLabels}>
-                  <Text style={styles.priceLabel}>PKR {priceRange.min.toLocaleString()}</Text>
-                  <Text style={styles.priceLabel}>PKR {priceRange.max.toLocaleString()}</Text>
+                  <Text style={styles.priceValue}>PKR {priceRange.min.toLocaleString()}</Text>
+                  <Text style={styles.priceValue}>PKR {priceRange.max.toLocaleString()}</Text>
                 </View>
-                <View style={styles.sliderContainer}>
-                  <Text style={styles.sliderLabel}>Minimum Price</Text>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={dbPriceRange.min}
-                    maximumValue={priceRange.max}
-                    value={priceRange.min}
-                    onValueChange={(value) => setPriceRange(prev => ({ ...prev, min: Math.round(value) }))}
-                    minimumTrackTintColor="#000000"
-                    maximumTrackTintColor="#e0e0e0"
-                    thumbTintColor="#000000"
-                  />
-                  <Text style={styles.sliderLabel}>Maximum Price</Text>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={priceRange.min}
-                    maximumValue={dbPriceRange.max}
-                    value={priceRange.max}
-                    onValueChange={(value) => setPriceRange(prev => ({ ...prev, max: Math.round(value) }))}
-                    minimumTrackTintColor="#000000"
-                    maximumTrackTintColor="#e0e0e0"
-                    thumbTintColor="#000000"
-                  />
-                </View>
-                <View style={styles.priceInputContainer}>
-                  <View style={styles.priceInputWrapper}>
-                    <Text style={styles.priceInputLabel}>Min</Text>
-                    <TextInput
-                      style={styles.priceInput}
-                      value={priceRange.min.toString()}
-                      onChangeText={(text) => {
-                        const value = parseInt(text) || 0;
-                        if (value >= dbPriceRange.min && value <= priceRange.max) {
-                          setPriceRange(prev => ({ ...prev, min: value }));
-                        }
-                      }}
-                      keyboardType="numeric"
-                      placeholder="0"
-                    />
-                  </View>
-                  <View style={styles.priceInputWrapper}>
-                    <Text style={styles.priceInputLabel}>Max</Text>
-                    <TextInput
-                      style={styles.priceInput}
-                      value={priceRange.max.toString()}
-                      onChangeText={(text) => {
-                        const value = parseInt(text) || 0;
-                        if (value <= dbPriceRange.max && value >= priceRange.min) {
-                          setPriceRange(prev => ({ ...prev, max: value }));
-                        }
-                      }}
-                      keyboardType="numeric"
-                      placeholder="100000"
-                    />
-                  </View>
-                </View>
-              </View>
+                <Text style={styles.sliderLabel}>Minimum</Text>
+                <Slider
+                  minimumValue={dbPriceRange.min}
+                  maximumValue={priceRange.max}
+                  value={priceRange.min}
+                  onValueChange={(v) => setPriceRange((p) => ({ ...p, min: Math.round(v) }))}
+                  minimumTrackTintColor={colors.ink}
+                  maximumTrackTintColor={colors.line}
+                  thumbTintColor={colors.ink}
+                />
+                <Text style={styles.sliderLabel}>Maximum</Text>
+                <Slider
+                  minimumValue={priceRange.min}
+                  maximumValue={dbPriceRange.max}
+                  value={priceRange.max}
+                  onValueChange={(v) => setPriceRange((p) => ({ ...p, max: Math.round(v) }))}
+                  minimumTrackTintColor={colors.ink}
+                  maximumTrackTintColor={colors.line}
+                  thumbTintColor={colors.ink}
+                />
+              </Section>
+            </ScrollView>
+
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+              <Pressable style={[styles.footerBtn, styles.resetBtn]} onPress={handleReset}>
+                <Text style={styles.resetText}>Reset</Text>
+              </Pressable>
+              <Pressable style={[styles.footerBtn, styles.applyBtn]} onPress={handleApply}>
+                <Text style={styles.applyText}>Apply filters</Text>
+              </Pressable>
             </View>
-
-            {/* Gender */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Gender</Text>
-              <View style={styles.filterGrid}>
-                {genders.map((gender) => (
-                  <TouchableOpacity
-                    key={gender}
-                    style={[
-                      styles.filterChip,
-                      selectedGender === gender && styles.activeFilterChip,
-                    ]}
-                    onPress={() => setSelectedGender(selectedGender === gender ? undefined : gender)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedGender === gender && styles.activeFilterChipText,
-                      ]}
-                    >
-                      {gender.charAt(0).toUpperCase() + gender.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Category */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Category</Text>
-              <View style={styles.filterGrid}>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.filterChip,
-                      selectedCategory === category && styles.activeFilterChip,
-                    ]}
-                    onPress={() => setSelectedCategory(selectedCategory === category ? undefined : category)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedCategory === category && styles.activeFilterChipText,
-                      ]}
-                    >
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Colors */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Colors</Text>
-              <View style={styles.filterGrid}>
-                {colors.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[
-                      styles.filterChip,
-                      selectedColors.includes(color) && styles.activeFilterChip,
-                    ]}
-                    onPress={() => handleColorToggle(color)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedColors.includes(color) && styles.activeFilterChipText,
-                      ]}
-                    >
-                      {color.charAt(0).toUpperCase() + color.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Sizes */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Sizes</Text>
-              <View style={styles.filterGrid}>
-                {sizes.map((size) => (
-                  <TouchableOpacity
-                    key={size}
-                    style={[
-                      styles.filterChip,
-                      selectedSizes.includes(size) && styles.activeFilterChip,
-                    ]}
-                    onPress={() => handleSizeToggle(size)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        selectedSizes.includes(size) && styles.activeFilterChipText,
-                      ]}
-                    >
-                      {size}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.bottomSpace} />
-          </ScrollView>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.cancelButton]}
-              onPress={onClose}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.applyButton]}
-              onPress={handleApply}
-            >
-              <Text style={styles.applyButtonText}>
-                Apply{hasActiveFilters ? ' Filters' : ''}
-              </Text>
-            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#E8D5C4', // Beige background
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.scrim,
   },
-  keyboardAvoidingView: {
+  sheetWrap: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
-  header: {
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    maxHeight: '88%',
+    ...shadows.float,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.line,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)', // Very subtle border
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 22,
+    color: colors.ink,
   },
-  clearAllButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  search: {
+    marginBottom: spacing.xl,
   },
-  clearAllText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    paddingTop: 8,
-  },
-  section: {
-    backgroundColor: '#ffffff', // White card background
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  activeFilterIndicator: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  activeFilterText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0', // Soft gray border
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#000000',
-  },
-  clearSearchButton: {
-    padding: 4,
-  },
-  filterGrid: {
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#f8f8f8', // Light gray background
-    borderWidth: 1,
-    borderColor: '#e0e0e0', // Soft border
-    marginBottom: 8,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  chip: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  activeFilterChip: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+  chipIdle: { backgroundColor: colors.input },
+  chipActive: { backgroundColor: colors.ink },
+  chipText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
   },
-  filterChipText: {
-    fontSize: 14,
-    color: '#000000',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  activeFilterChipText: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  bottomSpace: {
-    height: 20,
-  },
-  actionButtons: {
+  colorChip: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)', // Very subtle border
-    gap: 12,
-    backgroundColor: '#ffffff', // White background for button area
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: spacing.sm,
+    borderRadius: radius.pill,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingLeft: 6,
+    backgroundColor: colors.input,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  cancelButton: {
-    backgroundColor: '#f8f8f8',
+  colorChipActive: {
+    borderColor: colors.ink,
+  },
+  swatch: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
-  applyButton: {
-    backgroundColor: '#000000',
-  },
-  cancelButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  applyButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  priceRangeContainer: {
-    marginTop: 8,
+  colorChipText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    color: colors.ink,
   },
   priceLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: spacing.sm,
   },
-  priceLabel: {
+  priceValue: {
+    fontFamily: fontFamily.bold,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  sliderContainer: {
-    marginBottom: 20,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-    marginBottom: 8,
+    color: colors.ink,
   },
   sliderLabel: {
+    fontFamily: fontFamily.regular,
     fontSize: 12,
-    color: '#666666',
-    marginBottom: 4,
-    marginTop: 8,
+    color: colors.muted,
+    marginTop: spacing.sm,
   },
-  priceInputContainer: {
+  footer: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.md,
+    paddingTop: spacing.md,
   },
-  priceInputWrapper: {
+  footerBtn: {
+    height: 56,
+    borderRadius: radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetBtn: {
     flex: 1,
+    backgroundColor: colors.input,
   },
-  priceInputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
+  applyBtn: {
+    flex: 2,
+    backgroundColor: colors.cta,
   },
-  priceInput: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  resetText: {
+    fontFamily: fontFamily.regular,
     fontSize: 16,
-    color: '#000000',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    color: colors.ink,
+  },
+  applyText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    color: colors.onCta,
   },
 });
-
-/**
- * FiltersModal Component
- * 
- * A comprehensive filtering modal for articles with the following features:
- * - Search by title/description
- * - Filter by gender (male, female, unisex)
- * - Filter by category (tops, bottoms, dresses, etc.)
- * - Filter by colors (multiple selection)
- * - Filter by sizes (multiple selection)
- * - Filter by price range (dual slider + text inputs)
- * 
- * The price range filter integrates with Supabase to:
- * - Fetch actual min/max prices from the database
- * - Apply price filtering in SQL queries
- * - Handle edge cases (null prices, empty data)
- */
