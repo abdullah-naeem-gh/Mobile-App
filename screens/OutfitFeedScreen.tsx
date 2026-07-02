@@ -13,7 +13,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import { OutfitCard } from '../components/OutfitCard';
 import { outfitService } from '../services/outfitService';
 import { useAuth } from '../contexts/AuthContext';

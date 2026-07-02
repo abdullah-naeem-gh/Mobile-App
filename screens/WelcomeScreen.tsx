@@ -9,7 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -132,7 +132,7 @@ const AnimatedOutfitCard = ({ delay = 0, style }: { delay?: number; style?: any 
   );
 };
 
-const FloatingIcon = ({ iconName, delay = 0, style }: { iconName: string; delay?: number; style?: any }) => {
+const FloatingIcon = ({ iconName, delay = 0, style }: { iconName: React.ComponentProps<typeof Icon>['name']; delay?: number; style?: any }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const rotate = useRef(new Animated.Value(0)).current;

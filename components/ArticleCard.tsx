@@ -13,7 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import { Article } from '../types';
 import { getImageDimensions, calculateOptimalDimensions } from '../lib/imageUtils';
 import { PLATFORM_CONSTANTS } from '../utils/platformUtils';

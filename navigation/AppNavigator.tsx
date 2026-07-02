@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();

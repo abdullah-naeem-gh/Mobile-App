@@ -20,7 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { pickFullImage, uploadImage, getImageDimensions, calculateOptimalDimensions, takePhoto, pickImage } from '../lib/storage';
 import { ArticleFilters, articleService } from '../services/articleService';
 import { CategoryType, GenderType } from '../types';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import { Picker } from '@react-native-picker/picker';
 import { OutfitTagger, OutfitTag } from '../components/OutfitTagger';
 import { ArticleSearchModal } from '../components/ArticleSearchModal';

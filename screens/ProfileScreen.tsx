@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { MenuScreen } from './MenuScreen';
 import { SavedScreen } from './SavedScreen';
 import { LikesScreen } from './LikesScreen';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from '@expo/vector-icons/Ionicons';
 import {
   View,
   Text,
