@@ -31,6 +31,8 @@ interface ArticleCardProps {
   onSaveChange: (articleId: string, isSaved: boolean) => void;
   /** Fired when the card (not the rail/Visit buttons) is tapped. */
   onPress?: (article: Article) => void;
+  /** Fired when the brand name is tapped. */
+  onBrandPress?: (brandId: string) => void;
   /** Optional container override (the feed sets height/margins here). */
   style?: StyleProp<ViewStyle>;
 }
@@ -42,6 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onLikeChange,
   onSaveChange,
   onPress,
+  onBrandPress,
   style,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
@@ -152,7 +155,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         style={styles.info}
       >
         <View style={styles.metaRow}>
-          <Text style={styles.brand} numberOfLines={1}>
+          <Text
+            style={styles.brand}
+            numberOfLines={1}
+            onPress={onBrandPress ? () => onBrandPress(article.brand_id) : undefined}
+            suppressHighlighting
+          >
             {article.brand?.name ?? 'Unknown Brand'}
           </Text>
           <Text style={styles.price}>{price}</Text>

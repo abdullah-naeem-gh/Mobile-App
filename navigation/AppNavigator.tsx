@@ -7,6 +7,8 @@ import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { StyleQuizScreen } from '../screens/StyleQuizScreen';
+import { BrandProfileScreen } from '../screens/BrandProfileScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { OutfitFeedScreen } from '../screens/OutfitFeedScreen';
 import { PostScreen } from '../screens/PostScreen';
@@ -33,6 +35,7 @@ const AuthStack = () => (
 const OnboardingStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+    <Stack.Screen name="StyleQuiz" component={StyleQuizScreen} />
   </Stack.Navigator>
 );
 
@@ -41,6 +44,7 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="HomeScreen" component={HomeScreen} />
     <Stack.Screen name="FullScreenArticle" component={FullScreenArticleScreen} />
+    <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
   </Stack.Navigator>
 );
 

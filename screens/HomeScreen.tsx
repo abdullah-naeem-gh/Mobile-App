@@ -182,6 +182,7 @@ export const HomeScreen: React.FC = () => {
           onPress={() =>
             navigation.navigate('FullScreenArticle', { articles, initialIndex: index })
           }
+          onBrandPress={(brandId) => navigation.navigate('BrandProfile', { brandId })}
         />
       </Animated.View>
     );
