@@ -1,3 +1,10 @@
+// OutfitTagger — the interactive tag editor used in the outfit composer.
+// Tap the photo to drop a tag, tap a tag to attach an article. Re-skinned to
+// the design system (sand tag circles, tokenized overlay card). Behavior
+// (percent-based coordinates, pulse on untagged markers) is unchanged; the
+// tag card positioning was also fixed to use RN-valid percent offsets
+// (the previous CSS calc() strings are not supported by React Native).
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -5,14 +12,12 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  Dimensions,
   PanResponder,
   Animated,
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width: screenWidth } = Dimensions.get('window');
+import { colors, radius, fontFamily, spacing, shadows } from '../theme';
 
 export interface OutfitTag {
   id: string;
@@ -85,7 +90,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
       onPanResponderGrant: () => {
         setDraggedTag(tag.id);
       },
-      onPanResponderMove: (evt, gestureState) => {
+      onPanResponderMove: () => {
         // Handle tag dragging if needed in the future
       },
       onPanResponderRelease: () => {
@@ -97,7 +102,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
   const renderTagCard = (tag: OutfitTag) => {
     if (!tag.articleId || !tag.articleTitle) return null;
 
-    // Position cards appropriately based on tag location
+    // Flip the card to whichever side of the marker has room.
     const isLeft = tag.x > 50;
     const isTop = tag.y > 50;
 
@@ -106,12 +111,10 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
         style={[
           styles.tagCard,
           {
-            [isLeft ? 'right' : 'left']: `calc(${
-              isLeft ? '100% - ' : ''
-            }${tag.x}% + 20px)`,
-            [isTop ? 'bottom' : 'top']: `calc(${
-              isTop ? '100% - ' : ''
-            }${tag.y}% + 20px)`,
+            left: isLeft ? undefined : `${tag.x + 2}%`,
+            right: isLeft ? `${100 - tag.x + 2}%` : undefined,
+            top: isTop ? undefined : `${tag.y + 2}%`,
+            bottom: isTop ? `${100 - tag.y + 2}%` : undefined,
           } as ViewStyle,
         ]}
       >
@@ -123,7 +126,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
             style={styles.tagCardDelete}
             onPress={() => onTagDelete(tag.id)}
           >
-            <Ionicons name="close" size={12} color="#fff" />
+            <Ionicons name="close" size={12} color={colors.onDark} />
           </TouchableOpacity>
         </View>
         <View
@@ -195,7 +198,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
                 <Ionicons
                   name={tag.articleId ? 'checkmark' : 'add'}
                   size={14}
-                  color={tag.articleId ? '#000' : '#fff'}
+                  color={tag.articleId ? colors.ink : colors.onDark}
                 />
               </TouchableOpacity>
 
@@ -228,18 +231,17 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     position: 'relative',
-    // Remove fixed aspectRatio to allow flexible dimensions
   },
   imageContainer: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: radius.card,
     overflow: 'hidden',
   },
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain', // Changed from 'cover' to 'contain' to show full image
+    resizeMode: 'contain', // show the full image, no crop
   },
   tagContainer: {
     position: 'absolute',
@@ -258,22 +260,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...shadows.soft,
   },
   tagEmpty: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderColor: '#fff',
+    backgroundColor: colors.overlayMute,
+    borderColor: colors.onDark,
   },
   tagFilled: {
-    backgroundColor: '#fff',
-    borderColor: '#000',
+    backgroundColor: colors.tag,
+    borderColor: colors.ink,
   },
   tagDragged: {
     transform: [{ scale: 1.2 }],
@@ -283,44 +278,35 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: colors.frost,
     zIndex: -1,
   },
   tagCard: {
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    borderRadius: 8,
+    backgroundColor: colors.overlayMute,
+    borderRadius: radius.card,
     minWidth: 120,
     maxWidth: 160,
     zIndex: 200,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    ...shadows.float,
   },
   tagCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.s10,
+    paddingVertical: spacing.sm,
   },
   tagCardTitle: {
     flex: 1,
-    color: '#fff',
+    color: colors.onDark,
+    fontFamily: fontFamily.medium,
     fontSize: 12,
-    fontWeight: '500',
   },
   tagCardDelete: {
-    marginLeft: 6,
+    marginLeft: spacing.xs,
     padding: 3,
-    backgroundColor: 'rgba(255, 68, 68, 0.8)',
-    borderRadius: 10,
+    backgroundColor: colors.error,
+    borderRadius: radius.round,
   },
   tagCardArrow: {
     position: 'absolute',
@@ -331,7 +317,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: 'rgba(0, 0, 0, 0.85)',
+    borderTopColor: colors.overlayMute,
   },
   tagCardArrowLeft: {
     left: 10,
@@ -355,17 +341,15 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   instructionBubble: {
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: colors.overlayMute,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.card,
   },
   instructionText: {
-    color: '#fff',
+    color: colors.onDark,
+    fontFamily: fontFamily.medium,
     fontSize: 14,
-    fontWeight: '500',
     textAlign: 'center',
   },
 });

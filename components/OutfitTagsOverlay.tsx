@@ -1,3 +1,8 @@
+// OutfitTagsOverlay — read-only tag markers (and optional info cards) shown
+// on top of an outfit photo in the feed. Re-skinned to the design system:
+// sand marker circles and a tokenized dark card. Percent-based positioning
+// logic is unchanged from the original.
+
 import React from 'react';
 import {
   View,
@@ -7,6 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, fontFamily, spacing, shadows } from '../theme';
 
 interface OutfitArticle {
   x_position: number;
@@ -40,8 +46,8 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
     if (!showCards) return null;
 
     const { x_position, y_position, articles } = outfitArticle;
-    
-    // Position cards exactly like OutfitTagger does
+
+    // Flip the card to whichever side of the marker has room.
     const isLeft = x_position > 50;
     const isTop = y_position > 50;
 
@@ -51,13 +57,11 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
         style={[
           styles.tagCard,
           {
-            // Position the card using absolute positioning very close to the tag
             position: 'absolute',
-            // Position card directly next to the tag with minimal offset
-            left: isLeft ? undefined : `${x_position + 2}%`, // Reduced offset to 2%
-            right: isLeft ? `${100 - x_position + 2}%` : undefined, // Reduced offset to 2%
-            top: isTop ? undefined : `${y_position + 2}%`, // Reduced offset to 2%
-            bottom: isTop ? `${100 - y_position + 2}%` : undefined, // Reduced offset to 2%
+            left: isLeft ? undefined : `${x_position + 2}%`,
+            right: isLeft ? `${100 - x_position + 2}%` : undefined,
+            top: isTop ? undefined : `${y_position + 2}%`,
+            bottom: isTop ? `${100 - y_position + 2}%` : undefined,
           } as ViewStyle,
         ]}
         onPress={() => onTagPress && onTagPress(outfitArticle)}
@@ -88,9 +92,9 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
   return (
     <View style={styles.container} pointerEvents="box-none">
       {/* Render tags */}
-      {outfitArticles.map((outfitArticle, index) => {
+      {outfitArticles.map((outfitArticle) => {
         const { x_position, y_position, articles } = outfitArticle;
-        
+
         return (
           <React.Fragment key={articles.id}>
             {/* Tag Circle */}
@@ -108,11 +112,7 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
                 onPress={() => onTagPress && onTagPress(outfitArticle)}
                 disabled={!onTagPress}
               >
-                <Ionicons
-                  name="checkmark"
-                  size={14}
-                  color="#000"
-                />
+                <Ionicons name="checkmark" size={14} color={colors.ink} />
               </TouchableOpacity>
             </View>
 
@@ -152,51 +152,35 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#E8D5C4', // Beige background to match theme
-    borderWidth: 2, // Thinner border
-    borderColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 10,
+    backgroundColor: colors.panel,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.soft,
   },
   tagCard: {
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.95)', // Slightly more opaque
-    borderRadius: 12, // Slightly larger radius
-    minWidth: 140, // Slightly wider
+    backgroundColor: colors.overlayMute,
+    borderRadius: radius.card,
+    minWidth: 140,
     maxWidth: 200,
     zIndex: 200,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 12,
+    ...shadows.float,
   },
   tagCardContent: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.s10,
   },
   tagCardTitle: {
-    color: '#fff',
-    fontSize: 14, // Slightly larger text
-    fontWeight: '700', // Bolder weight
-    marginBottom: 6,
+    color: colors.onDark,
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    marginBottom: spacing.xs,
     lineHeight: 18,
   },
   tagCardPrice: {
-    color: '#E8D5C4', // Beige color to match theme
+    color: colors.tag,
+    fontFamily: fontFamily.medium,
     fontSize: 12,
-    fontWeight: '600',
   },
   tagCardArrow: {
     position: 'absolute',
@@ -207,7 +191,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: 'rgba(0, 0, 0, 0.95)',
+    borderTopColor: colors.overlayMute,
   },
   tagCardArrowLeft: {
     left: 10,

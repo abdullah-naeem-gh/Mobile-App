@@ -1,11 +1,15 @@
+// ArticleSearchModal — search-and-pick an article to attach to an outfit tag
+// (used by the composer's OutfitTagger flow). Re-skinned to the design
+// system: Input search field, tokenized result rows (ink fill when selected)
+// and a FiltersModal-style footer (cream Cancel / amber Confirm). Search,
+// selection and confirm/close behavior are unchanged.
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   Modal,
-  TextInput,
   FlatList,
-  TouchableOpacity,
   Image,
   StyleSheet,
   ActivityIndicator,
@@ -16,6 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { articleService } from '../services/articleService';
 import { Article } from '../types';
+import { Input, PressableScale } from './ui';
+import { colors, radius, spacing, fontFamily } from '../theme';
 
 interface ArticleSearchModalProps {
   visible: boolean;
@@ -52,7 +58,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
         search: searchQuery,
         limit: 20,
       });
-      
+
       if (result.success && result.data) {
         setArticles(result.data);
       }
@@ -83,36 +89,39 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
     onClose();
   };
 
-  const renderArticleItem = ({ item }: { item: Article }) => (
-    <TouchableOpacity
-      style={[
-        styles.articleItem,
-        currentSelectedArticle?.id === item.id && styles.selectedArticleItem,
-      ]}
-      onPress={() => handleSelectArticle(item)}
-    >
-      {item.image_urls && item.image_urls[0] && (
-        <Image
-          source={{ uri: item.image_urls[0] }}
-          style={styles.articleImage}
-        />
-      )}
-      <View style={styles.articleInfo}>
-        <Text style={[styles.articleTitle, currentSelectedArticle?.id === item.id && styles.selectedArticleTitle]} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={[styles.articlePrice, currentSelectedArticle?.id === item.id && styles.selectedArticlePrice]}>
-          {item.currency} {item.price}
-        </Text>
-        <Text style={styles.articleCategory}>
-          {item.category} • {item.gender}
-        </Text>
-      </View>
-      {currentSelectedArticle?.id === item.id && (
-        <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
-      )}
-    </TouchableOpacity>
-  );
+  const renderArticleItem = ({ item }: { item: Article }) => {
+    const selected = currentSelectedArticle?.id === item.id;
+    return (
+      <PressableScale
+        style={[styles.articleItem, selected && styles.selectedArticleItem]}
+        activeScale={0.98}
+        onPress={() => handleSelectArticle(item)}
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+      >
+        {item.image_urls && item.image_urls[0] && (
+          <Image source={{ uri: item.image_urls[0] }} style={styles.articleImage} />
+        )}
+        <View style={styles.articleInfo}>
+          <Text
+            style={[styles.articleTitle, selected && styles.selectedText]}
+            numberOfLines={2}
+          >
+            {item.title}
+          </Text>
+          <Text style={[styles.articlePrice, selected && styles.selectedText]}>
+            {item.currency} {item.price}
+          </Text>
+          <Text style={[styles.articleCategory, selected && styles.selectedMuted]}>
+            {item.category} • {item.gender}
+          </Text>
+        </View>
+        {selected && (
+          <Ionicons name="checkmark-circle" size={24} color={colors.cta} />
+        )}
+      </PressableScale>
+    );
+  };
 
   return (
     <Modal
@@ -120,61 +129,62 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
       animationType="slide"
       presentationStyle="pageSheet"
     >
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView 
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#000" />
-            </TouchableOpacity>
             <Text style={styles.title}>Select Article</Text>
-            <View style={styles.placeholder} />
+            <PressableScale
+              onPress={handleClose}
+              activeScale={0.9}
+              style={styles.closeButton}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={20} color={colors.ink} />
+            </PressableScale>
           </View>
 
           <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={20} color="#666" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search articles..."
-                placeholderTextColor="#999"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoFocus
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearButton}
-                >
-                  <Ionicons name="close-circle" size={20} color="#666" />
-                </TouchableOpacity>
-              )}
-            </View>
+            <Input
+              placeholder="Search articles…"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+              trailing={
+                searchQuery.length > 0 ? (
+                  <PressableScale
+                    onPress={() => setSearchQuery('')}
+                    activeScale={0.85}
+                    hitSlop={8}
+                    accessibilityLabel="Clear search"
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.muted} />
+                  </PressableScale>
+                ) : (
+                  <Ionicons name="search" size={20} color={colors.muted} />
+                )
+              }
+            />
           </View>
 
           <View style={styles.content}>
             {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.loadingText}>Searching...</Text>
+              <View style={styles.stateContainer}>
+                <ActivityIndicator size="large" color={colors.ink} />
+                <Text style={styles.stateText}>Searching…</Text>
               </View>
             ) : searchQuery.length < 2 ? (
-              <View style={styles.instructionContainer}>
-                <Ionicons name="search" size={48} color="#666" />
-                <Text style={styles.instructionText}>
-                  Type at least 2 characters to search
-                </Text>
+              <View style={styles.stateContainer}>
+                <Ionicons name="search" size={44} color={colors.tag} />
+                <Text style={styles.stateText}>Type at least 2 characters to search</Text>
               </View>
             ) : articles.length === 0 && hasSearched ? (
-              <View style={styles.noResultsContainer}>
-                <Ionicons name="sad-outline" size={48} color="#666" />
-                <Text style={styles.noResultsText}>
-                  No articles found for "{searchQuery}"
-                </Text>
+              <View style={styles.stateContainer}>
+                <Ionicons name="sad-outline" size={44} color={colors.tag} />
+                <Text style={styles.stateText}>No articles found for "{searchQuery}"</Text>
               </View>
             ) : (
               <FlatList
@@ -190,28 +200,30 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity
+            <PressableScale
               style={[styles.actionButton, styles.cancelButton]}
+              activeScale={0.97}
               onPress={handleClose}
+              accessibilityRole="button"
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </PressableScale>
+            <PressableScale
               style={[
                 styles.actionButton,
                 styles.confirmButton,
                 !currentSelectedArticle && styles.disabledButton,
               ]}
+              activeScale={0.97}
               onPress={handleConfirm}
               disabled={!currentSelectedArticle}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !currentSelectedArticle }}
             >
-              <Text style={[
-                styles.confirmButtonText,
-                !currentSelectedArticle && styles.disabledButtonText,
-              ]}>
+              <Text style={styles.confirmButtonText}>
                 {currentSelectedArticle ? 'Confirm' : 'Select Article'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -222,7 +234,7 @@ export const ArticleSearchModal: React.FC<ArticleSearchModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8D5C4', // Beige background
+    backgroundColor: colors.bg,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -231,172 +243,124 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000', // Black border
-  },
-  closeButton: {
-    padding: 4,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000', // Black text
+    fontFamily: fontFamily.bold,
+    fontSize: 22,
+    color: colors.ink,
   },
-  placeholder: {
-    width: 32,
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.input,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff', // White background
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#000000', // Black border
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#000000', // Black text
-  },
-  clearButton: {
-    padding: 4,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   content: {
     flex: 1,
   },
-  loadingContainer: {
+  stateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.x40,
   },
-  loadingText: {
-    color: '#666',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  instructionContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  instructionText: {
-    color: '#666',
-    fontSize: 16,
+  stateText: {
+    fontFamily: fontFamily.regular,
+    fontSize: 15,
+    color: colors.muted,
     textAlign: 'center',
-    marginTop: 16,
-  },
-  noResultsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  noResultsText: {
-    color: '#666',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 16,
   },
   listContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
   },
   articleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)', // Light black border
-    backgroundColor: '#ffffff', // White background for list items
-    borderRadius: 8,
-    marginBottom: 8,
-    paddingHorizontal: 12,
+    gap: spacing.md,
+    backgroundColor: colors.input,
+    borderRadius: radius.input,
+    padding: spacing.md,
   },
   selectedArticleItem: {
-    backgroundColor: '#000000', // Black when selected
-    borderColor: '#000000',
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    backgroundColor: colors.ink,
   },
   articleImage: {
     width: 60,
     height: 60,
-    borderRadius: 8,
-    marginRight: 12,
+    borderRadius: radius.card,
+    backgroundColor: colors.line,
   },
   articleInfo: {
     flex: 1,
+    gap: 2,
   },
   articleTitle: {
-    color: '#000000', // Black text
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  selectedArticleTitle: {
-    color: '#ffffff', // White text when selected
+    fontFamily: fontFamily.medium,
+    fontSize: 15,
+    color: colors.ink,
   },
   articlePrice: {
-    color: '#000000', // Black text
+    fontFamily: fontFamily.bold,
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  selectedArticlePrice: {
-    color: '#ffffff', // White text when selected
+    color: colors.ink,
   },
   articleCategory: {
-    color: '#666',
+    fontFamily: fontFamily.regular,
     fontSize: 12,
+    color: colors.muted,
     textTransform: 'capitalize',
+  },
+  selectedText: {
+    color: colors.onDark,
+  },
+  selectedMuted: {
+    color: colors.line,
   },
   actionButtons: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: '#000000', // Black border
-    gap: 12,
+    borderTopColor: colors.line,
   },
   actionButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
+    height: 56,
+    borderRadius: radius.input,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#000000', // Black border
+    flex: 1,
+    backgroundColor: colors.input,
   },
   confirmButton: {
-    backgroundColor: '#000000', // Black button
+    flex: 2,
+    backgroundColor: colors.cta,
   },
   disabledButton: {
-    backgroundColor: '#999999', // Gray when disabled
+    opacity: 0.5,
   },
   cancelButtonText: {
-    color: '#000000', // Black text
+    fontFamily: fontFamily.regular,
     fontSize: 16,
-    fontWeight: '600',
+    color: colors.ink,
   },
   confirmButtonText: {
-    color: '#ffffff', // White text on black button
+    fontFamily: fontFamily.bold,
     fontSize: 16,
-    fontWeight: '600',
-  },
-  disabledButtonText: {
-    color: '#666',
+    color: colors.onCta,
   },
 });
