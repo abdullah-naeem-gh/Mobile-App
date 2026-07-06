@@ -34,12 +34,16 @@ export const palette = {
   // State (never used for branding)
   heart: '#FF3040', // like / active
   error: '#D64B4B',
+  errorBg: '#FFF5F5', // inline error banner fill
+  errorBorder: '#FFD5D5', // inline error banner border
   success: '#4CAF50',
 
   // Translucent
   overlayFade: 'rgba(0,0,0,0.61)', // welcome subtitle
   overlayMute: 'rgba(0,0,0,0.75)',
+  overlayPill: 'rgba(0,0,0,0.65)', // price pill on top of a photo
   scrim: 'rgba(0,0,0,0.4)', // modal backdrop
+  frost: 'rgba(255,255,255,0.9)', // frosted white circle button over photos
 } as const;
 
 // Semantic tokens — screens should reference these, not raw palette entries.
@@ -77,11 +81,15 @@ export const colors = {
   // State
   heart: palette.heart,
   error: palette.error,
+  errorBg: palette.errorBg,
+  errorBorder: palette.errorBorder,
   success: palette.success,
 
   // Overlays
   scrim: palette.scrim,
   overlayMute: palette.overlayMute,
+  pillOverlay: palette.overlayPill,
+  frost: palette.frost,
 } as const;
 
 export type Palette = typeof palette;

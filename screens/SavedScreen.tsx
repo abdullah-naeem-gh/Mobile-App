@@ -1,10 +1,10 @@
 // SavedScreen — the Saved tab (also embedded in Profile). Shows a mosaic of
-// recent saves, "smart collections" derived client-side from the real saved
-// items (All / Articles / Outfits), and a grid of the current selection.
-// Keeps the Supabase load + unsave logic.
+// recent saves, "smart collections" (All / Articles / Outfits / From brands
+// you follow), and a grid of the current selection.
 //
-// TODO(backend): server-side smart collections (price-dropped, from followed
-// brands, user boards) once those exist.
+// The saves themselves and the "from a brand you follow" flag are computed
+// server-side in savesService (which cross-references the `follows` table),
+// not guessed at client-side.
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -21,34 +21,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { savesService, SavedItem, SmartCollectionId } from '../services/savesService';
 import { SubHeader, PressableScale } from '../components/ui';
 import { colors, radius, spacing, fontFamily, shadows } from '../theme';
-
-interface SavedItem {
-  id: string;
-  created_at: string;
-  articles?: {
-    id: string;
-    title: string;
-    image_urls: string[];
-    price: number;
-    currency: string;
-    brands: { name: string };
-  } | null;
-  outfits?: {
-    id: string;
-    title: string;
-    image_url: string;
-    users: { username: string };
-  } | null;
-}
 
 interface SavedScreenProps {
   onBack: () => void;
 }
-
-type Tab = 'all' | 'articles' | 'outfits';
 
 const savedImage = (item: SavedItem): string | null =>
   item.articles ? item.articles.image_urls?.[0] ?? null : item.outfits?.image_url ?? null;
@@ -58,63 +37,18 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<Tab>('all');
+  const [selectedTab, setSelectedTab] = useState<SmartCollectionId>('all');
 
   const loadSavedItems = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('saves')
-        .select('id, created_at, article_id, outfit_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-
-      const hydrated = await Promise.all(
-        (data || []).map(async (save): Promise<SavedItem> => {
-          const item: SavedItem = { id: save.id, created_at: save.created_at, articles: null, outfits: null };
-          if (save.article_id) {
-            const { data: a } = await supabase
-              .from('articles')
-              .select('id, title, image_urls, price, currency, brands!articles_brand_id_fkey ( name )')
-              .eq('id', save.article_id)
-              .single();
-            if (a) {
-              item.articles = {
-                id: a.id,
-                title: a.title,
-                image_urls: a.image_urls,
-                price: a.price,
-                currency: a.currency,
-                brands: Array.isArray(a.brands) ? a.brands[0] : a.brands,
-              };
-            }
-          }
-          if (save.outfit_id) {
-            const { data: o } = await supabase
-              .from('outfits')
-              .select('id, title, image_url, users!outfits_user_id_fkey ( username )')
-              .eq('id', save.outfit_id)
-              .single();
-            if (o) {
-              item.outfits = {
-                id: o.id,
-                title: o.title,
-                image_url: o.image_url,
-                users: Array.isArray(o.users) ? o.users[0] : o.users,
-              };
-            }
-          }
-          return item;
-        }),
-      );
-      setSavedItems(hydrated);
-    } catch {
-      Alert.alert('Error', 'Failed to load saved items');
-    } finally {
-      setLoading(false);
+    const result = await savesService.getSavedItems(user.id);
+    if (result.success && result.data) {
+      setSavedItems(result.data);
+    } else {
+      Alert.alert('Error', result.error || 'Failed to load saved items');
     }
+    setLoading(false);
   }, [user]);
 
   useEffect(() => {
@@ -128,13 +62,11 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   };
 
   const handleUnsave = async (saveId: string) => {
-    const { error } = await supabase.from('saves').delete().eq('id', saveId);
-    if (error) Alert.alert('Error', 'Failed to remove item from saved');
+    const result = await savesService.removeSave(saveId);
+    if (!result.success) Alert.alert('Error', result.error || 'Failed to remove item from saved');
     else setSavedItems((items) => items.filter((i) => i.id !== saveId));
   };
 
-  const articleCount = useMemo(() => savedItems.filter((i) => i.articles).length, [savedItems]);
-  const outfitCount = savedItems.length - articleCount;
   const mosaic = useMemo(
     () => savedItems.map(savedImage).filter(Boolean).slice(0, 5) as string[],
     [savedItems],
@@ -143,14 +75,11 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
   const filtered = useMemo(() => {
     if (selectedTab === 'articles') return savedItems.filter((i) => i.articles);
     if (selectedTab === 'outfits') return savedItems.filter((i) => i.outfits);
+    if (selectedTab === 'followed_brands') return savedItems.filter((i) => i.from_followed_brand);
     return savedItems;
   }, [savedItems, selectedTab]);
 
-  const collections: { id: Tab; label: string; count: number }[] = [
-    { id: 'all', label: 'All saves', count: savedItems.length },
-    { id: 'articles', label: 'Articles', count: articleCount },
-    { id: 'outfits', label: 'Outfits', count: outfitCount },
-  ];
+  const collections = useMemo(() => savesService.computeCollections(savedItems), [savedItems]);
 
   const openItem = (item: SavedItem) => {
     const isArticle = !!item.articles;
@@ -312,11 +241,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.pillOverlay,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
-  priceText: { fontFamily: fontFamily.bold, fontSize: 10, color: '#fff' },
+  priceText: { fontFamily: fontFamily.bold, fontSize: 10, color: colors.onDark },
   bottomSpace: { height: spacing.xxl },
 });

@@ -37,7 +37,7 @@ interface ArticleCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const RAIL_ICON = '#fff';
+const RAIL_ICON = colors.onPhoto;
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
   article,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   railCount: {
     fontFamily: fontFamily.bold,
     fontSize: 11,
-    color: '#fff',
+    color: colors.onPhoto,
   },
   info: {
     position: 'absolute',
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
   price: {
     fontFamily: fontFamily.bold,
     fontSize: 15,
-    color: '#fff',
+    color: colors.onPhoto,
   },
   name: {
     fontFamily: fontFamily.bold,
     fontSize: 22,
     lineHeight: 26,
-    color: '#fff',
+    color: colors.onPhoto,
   },
   bottomRow: {
     flexDirection: 'row',

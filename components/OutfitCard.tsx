@@ -33,7 +33,7 @@ interface OutfitCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const RAIL_ICON = '#fff';
+const RAIL_ICON = colors.onPhoto;
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
   outfit,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   railCount: {
     fontFamily: fontFamily.bold,
     fontSize: 11,
-    color: '#fff',
+    color: colors.onPhoto,
   },
   info: {
     position: 'absolute',
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   username: {
     fontFamily: fontFamily.bold,
     fontSize: 15,
-    color: '#fff',
+    color: colors.onPhoto,
   },
   timestamp: {
     fontFamily: fontFamily.regular,

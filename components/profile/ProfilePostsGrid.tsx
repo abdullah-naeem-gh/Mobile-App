@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.pillOverlay,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontFamily: fontFamily.bold,
     fontSize: 10,
-    color: '#fff',
+    color: colors.onDark,
   },
   state: {
     alignItems: 'center',

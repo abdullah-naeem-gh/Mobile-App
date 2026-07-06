@@ -10,6 +10,7 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  ActivityIndicator,
   LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -173,10 +174,16 @@ export const OutfitFeedScreen: React.FC = () => {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.ink} />
           }
           ListEmptyComponent={
-            pageHeight > 0 && !loading ? (
+            pageHeight > 0 ? (
               <View style={[styles.empty, { height: pageHeight, paddingTop: headerOffset }]}>
-                <Text style={styles.emptyText}>No outfits found</Text>
-                <Text style={styles.emptySub}>Follow users to see their outfit posts</Text>
+                {loading ? (
+                  <ActivityIndicator size="large" color={colors.ink} />
+                ) : (
+                  <>
+                    <Text style={styles.emptyText}>No outfits found</Text>
+                    <Text style={styles.emptySub}>Follow users to see their outfit posts</Text>
+                  </>
+                )}
               </View>
             ) : null
           }

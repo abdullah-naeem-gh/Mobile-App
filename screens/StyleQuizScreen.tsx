@@ -2,9 +2,10 @@
 // style tiles: tap to "love" a few, then continue into the feed. This seeds
 // taste before the Reels feed has any swipe signal.
 //
-// TODO(backend): persist the selected style tags to the user's profile /
-// recommendation model. For now it's local state and simply completes
-// onboarding.
+// Selected style tags are persisted to `user_style_preferences` via
+// styleQuizService so the recommendation model (or, for now, simple
+// "style match" filtering) has something to work with. Persistence is
+// best-effort: a failure to save never blocks onboarding from completing.
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
@@ -13,6 +14,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, PressableScale } from '../components/ui';
 import { colors, radius, spacing, fontFamily, palette } from '../theme';
+import { styleQuizService } from '../services/styleQuizService';
 
 const TILES = [
   'Streetwear', 'Minimalist', 'Workwear',
@@ -30,7 +32,7 @@ const TONES = [
 const MIN_PICKS = 3;
 
 export const StyleQuizScreen: React.FC = () => {
-  const { completeOnboarding } = useAuth();
+  const { user, completeOnboarding } = useAuth();
   const [loved, setLoved] = useState<Set<string>>(new Set());
   const [finishing, setFinishing] = useState(false);
 
@@ -45,6 +47,13 @@ export const StyleQuizScreen: React.FC = () => {
 
   const finish = async () => {
     setFinishing(true);
+    if (user && loved.size > 0) {
+      // Best-effort: never block onboarding on a failed save.
+      const result = await styleQuizService.saveStylePreferences(user.id, Array.from(loved));
+      if (!result.success) {
+        console.warn('Failed to save style preferences:', result.error);
+      }
+    }
     await completeOnboarding();
   };
 
