@@ -5,14 +5,23 @@
 // the Supabase insert + completeOnboarding wiring is unchanged.
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { Field, Chip, Button } from '../components/ui';
-import { colors, spacing, fontFamily } from '../theme';
+import { colors, spacing, fontFamily, fontSize } from '../theme';
 
 const genderOptions = ['male', 'female', 'unisex'];
 const bodyTypeOptions = ['rectangle', 'pear', 'apple', 'hourglass', 'inverted_triangle'];
@@ -170,149 +179,154 @@ export const OnboardingScreen = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={styles.header}>
-            {isConsumer ? <Text style={styles.step}>STEP 1 OF 2</Text> : null}
-            <Text style={styles.title}>
-              {isConsumer ? 'Complete your profile' : 'Set up your brand'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isConsumer
-                ? 'Help us personalize your experience.'
-                : "Let's get your brand profile ready."}
-            </Text>
-          </View>
-
-          {isConsumer ? (
-            <View style={styles.form}>
-              <Field
-                label="Username *"
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Choose a unique username"
-                autoCapitalize="none"
-              />
-              <Field
-                label="Full Name *"
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Your full name"
-              />
-              <Field
-                label="Bio"
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Tell us about yourself…"
-                multiline
-              />
-
-              <OptionGroup
-                label="Gender"
-                options={genderOptions}
-                isSelected={(o) => gender === o}
-                onToggle={setGender}
-              />
-              <OptionGroup
-                label="Body Type"
-                options={bodyTypeOptions}
-                isSelected={(o) => bodyType === o}
-                onToggle={setBodyType}
-              />
-              <OptionGroup
-                label="Preferred Style"
-                options={styleOptions}
-                isSelected={(o) => preferredStyle === o}
-                onToggle={setPreferredStyle}
-              />
-              <OptionGroup
-                label="Preferred Occasions (select multiple)"
-                options={occasionOptions}
-                isSelected={(o) => preferredOccasions.includes(o)}
-                onToggle={toggleOccasion}
-              />
-
-              <Field
-                label="Location"
-                value={location}
-                onChangeText={setLocation}
-                placeholder="City, Country"
-              />
-              <Field
-                label="Website"
-                value={website}
-                onChangeText={setWebsite}
-                placeholder="https://yourwebsite.com"
-                keyboardType="url"
-                autoCapitalize="none"
-              />
-
-              <Button
-                label="Complete Setup"
-                onPress={handleConsumerComplete}
-                loading={loadingState}
-                style={styles.submit}
-              />
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.header}>
+              {isConsumer ? <Text style={styles.step}>STEP 1 OF 2</Text> : null}
+              <Text style={styles.title}>
+                {isConsumer ? 'Complete your profile' : 'Set up your brand'}
+              </Text>
+              <Text style={styles.subtitle}>
+                {isConsumer
+                  ? 'Help us personalize your experience.'
+                  : "Let's get your brand profile ready."}
+              </Text>
             </View>
-          ) : (
-            <View style={styles.form}>
-              <Field
-                label="Brand Name *"
-                value={brandName}
-                onChangeText={setBrandName}
-                placeholder="Your brand name"
-              />
-              <Field
-                label="Brand Description"
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Tell us about your brand…"
-                multiline
-              />
-              <Field
-                label="Logo URL"
-                value={logoUrl}
-                onChangeText={setLogoUrl}
-                placeholder="https://yourbrand.com/logo.png"
-                keyboardType="url"
-                autoCapitalize="none"
-              />
-              <Field
-                label="Website URL"
-                value={websiteUrl}
-                onChangeText={setWebsiteUrl}
-                placeholder="https://yourbrand.com"
-                keyboardType="url"
-                autoCapitalize="none"
-              />
-              <Field
-                label="Instagram Handle"
-                value={instagramHandle}
-                onChangeText={setInstagramHandle}
-                placeholder="@yourbrand"
-                autoCapitalize="none"
-              />
-              <Field
-                label="Contact Email"
-                value={contactEmail}
-                onChangeText={setContactEmail}
-                placeholder="contact@yourbrand.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
 
-              <Button
-                label="Complete Setup"
-                onPress={handleBrandComplete}
-                loading={loadingState}
-                style={styles.submit}
-              />
-            </View>
-          )}
-        </ScrollView>
+            {isConsumer ? (
+              <View style={styles.form}>
+                <Field
+                  label="Username *"
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="Choose a unique username"
+                  autoCapitalize="none"
+                />
+                <Field
+                  label="Full Name *"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Your full name"
+                />
+                <Field
+                  label="Bio"
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Tell us about yourself…"
+                  multiline
+                />
+
+                <OptionGroup
+                  label="Gender"
+                  options={genderOptions}
+                  isSelected={(o) => gender === o}
+                  onToggle={setGender}
+                />
+                <OptionGroup
+                  label="Body Type"
+                  options={bodyTypeOptions}
+                  isSelected={(o) => bodyType === o}
+                  onToggle={setBodyType}
+                />
+                <OptionGroup
+                  label="Preferred Style"
+                  options={styleOptions}
+                  isSelected={(o) => preferredStyle === o}
+                  onToggle={setPreferredStyle}
+                />
+                <OptionGroup
+                  label="Preferred Occasions (select multiple)"
+                  options={occasionOptions}
+                  isSelected={(o) => preferredOccasions.includes(o)}
+                  onToggle={toggleOccasion}
+                />
+
+                <Field
+                  label="Location"
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="City, Country"
+                />
+                <Field
+                  label="Website"
+                  value={website}
+                  onChangeText={setWebsite}
+                  placeholder="https://yourwebsite.com"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+
+                <Button
+                  label="Complete Setup"
+                  onPress={handleConsumerComplete}
+                  loading={loadingState}
+                  style={styles.submit}
+                />
+              </View>
+            ) : (
+              <View style={styles.form}>
+                <Field
+                  label="Brand Name *"
+                  value={brandName}
+                  onChangeText={setBrandName}
+                  placeholder="Your brand name"
+                />
+                <Field
+                  label="Brand Description"
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Tell us about your brand…"
+                  multiline
+                />
+                <Field
+                  label="Logo URL"
+                  value={logoUrl}
+                  onChangeText={setLogoUrl}
+                  placeholder="https://yourbrand.com/logo.png"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+                <Field
+                  label="Website URL"
+                  value={websiteUrl}
+                  onChangeText={setWebsiteUrl}
+                  placeholder="https://yourbrand.com"
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+                <Field
+                  label="Instagram Handle"
+                  value={instagramHandle}
+                  onChangeText={setInstagramHandle}
+                  placeholder="@yourbrand"
+                  autoCapitalize="none"
+                />
+                <Field
+                  label="Contact Email"
+                  value={contactEmail}
+                  onChangeText={setContactEmail}
+                  placeholder="contact@yourbrand.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+
+                <Button
+                  label="Complete Setup"
+                  onPress={handleBrandComplete}
+                  loading={loadingState}
+                  style={styles.submit}
+                />
+              </View>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
@@ -326,6 +340,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  flex: {
+    flex: 1,
+  },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -334,12 +351,12 @@ const styles = StyleSheet.create({
   },
   centeredText: {
     fontFamily: fontFamily.regular,
-    fontSize: 15,
+    fontSize: fontSize.body,
     color: colors.muted,
   },
   errorText: {
     fontFamily: fontFamily.regular,
-    fontSize: 15,
+    fontSize: fontSize.body,
     color: colors.error,
     textAlign: 'center',
   },

@@ -49,7 +49,7 @@ export const OutfitFields: React.FC<OutfitFieldsProps> = ({
                 Position: {Math.round(tag.x)}%, {Math.round(tag.y)}%
               </Text>
             </View>
-            <PressableScale activeScale={0.85} onPress={() => onDeleteTag(tag.id)} hitSlop={8}>
+            <PressableScale activeScale={0.85} onPress={() => onDeleteTag(tag.id)} hitSlop={14}>
               <Icon name="close" size={16} color={colors.muted} />
             </PressableScale>
           </View>
@@ -61,7 +61,7 @@ export const OutfitFields: React.FC<OutfitFieldsProps> = ({
 
 const styles = StyleSheet.create({
   group: { gap: spacing.lg },
-  label: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink, marginBottom: spacing.sm },
+  label: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink },
   tagsBlock: { gap: spacing.sm },
   tagItem: {
     flexDirection: 'row',

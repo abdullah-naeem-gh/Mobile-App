@@ -24,7 +24,7 @@ import { LikesScreen } from './LikesScreen';
 import { SubHeader, PressableScale, Chip } from '../components/ui';
 import { ProfileHeroCard } from '../components/profile/ProfileHeroCard';
 import { ProfilePostsGrid, GridItem } from '../components/profile/ProfilePostsGrid';
-import { colors, spacing, fontFamily } from '../theme';
+import { colors, spacing, radius, fontFamily } from '../theme';
 
 interface BrandProfile {
   id: string;
@@ -360,6 +360,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
+    backgroundColor: colors.input,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   retry: {
     marginTop: spacing.sm,
     backgroundColor: colors.ink,
-    borderRadius: 999,
+    borderRadius: radius.round,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.s10,
   },

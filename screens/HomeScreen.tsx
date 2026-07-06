@@ -42,10 +42,13 @@ export const HomeScreen: React.FC = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [pageHeight, setPageHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Card top offset = floating header height; bottom = breathing room.
-  const headerOffset = insets.top + 60;
+  // Card top offset = floating header height, measured from the header's
+  // onLayout (AppHeader owns the top inset). Fallback approximates the
+  // header (top inset + wordmark row) until the first layout pass lands.
+  const headerOffset = headerHeight || insets.top + 68;
 
   const loadArticles = useCallback(
     async (currentPage: number, currentFilters: ArticleFilters, reset: boolean) => {
@@ -247,7 +250,14 @@ export const HomeScreen: React.FC = () => {
       </SafeAreaView>
 
       {/* Floating header over the feed */}
-      <View style={styles.header} pointerEvents="box-none">
+      <View
+        style={styles.header}
+        pointerEvents="box-none"
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (h > 0 && h !== headerHeight) setHeaderHeight(h);
+        }}
+      >
         <AppHeader onFilter={() => setShowFiltersModal(true)} hasFilters={hasActiveFilters} />
       </View>
 

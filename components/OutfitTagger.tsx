@@ -125,6 +125,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
           <TouchableOpacity
             style={styles.tagCardDelete}
             onPress={() => onTagDelete(tag.id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close" size={12} color={colors.onDark} />
           </TouchableOpacity>
@@ -193,6 +194,7 @@ export const OutfitTagger: React.FC<OutfitTaggerProps> = ({
                   draggedTag === tag.id && styles.tagDragged,
                 ]}
                 onPress={() => onTagPress(tag)}
+                hitSlop={{ top: 7, bottom: 7, left: 7, right: 7 }}
                 {...createPanResponder(tag).panHandlers}
               >
                 <Ionicons
@@ -325,13 +327,18 @@ const styles = StyleSheet.create({
   tagCardArrowRight: {
     right: 10,
   },
+  // Default triangle (border-top only) points down; when the card sits
+  // BELOW the marker, the tail must be at the card's top edge pointing up
+  // (toward the marker above), so it's flipped 180deg.
   tagCardArrowTop: {
-    bottom: -8,
-    transform: [{ rotate: '0deg' }],
-  },
-  tagCardArrowBottom: {
     top: -8,
     transform: [{ rotate: '180deg' }],
+  },
+  // Card sits ABOVE the marker: tail at the bottom edge, pointing down
+  // (toward the marker below) — the default triangle orientation.
+  tagCardArrowBottom: {
+    bottom: -8,
+    transform: [{ rotate: '0deg' }],
   },
   instructionOverlay: {
     position: 'absolute',

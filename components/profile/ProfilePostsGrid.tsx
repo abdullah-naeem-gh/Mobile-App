@@ -2,11 +2,23 @@
 // soft panel, with loading / error / empty states. Presentational; the screen
 // normalizes its data into GridItem[] and owns the handlers.
 
-import React from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  LayoutChangeEvent,
+} from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { PressableScale } from '../ui';
 import { colors, radius, spacing, fontFamily } from '../../theme';
+
+const COLUMNS = 3;
+const PANEL_PADDING = spacing.lg;
+const GRID_GAP = spacing.sm;
 
 export interface GridItem {
   id: string;
@@ -34,8 +46,23 @@ export const ProfilePostsGrid: React.FC<ProfilePostsGridProps> = ({
   onRetry,
   onPressItem,
 }) => {
+  // FlatList's flex-based column sizing stretches items to fill the row
+  // when the last row has fewer than COLUMNS items (RN flexGrow behavior).
+  // Measure the panel's inner width and size tiles explicitly so every
+  // item stays the same width/aspect regardless of how the last row fills.
+  const [panelWidth, setPanelWidth] = useState(0);
+  const handlePanelLayout = useCallback((e: LayoutChangeEvent) => {
+    setPanelWidth(e.nativeEvent.layout.width);
+  }, []);
+  const innerWidth = Math.max(panelWidth - PANEL_PADDING * 2, 0);
+  const itemSize = innerWidth > 0 ? (innerWidth - GRID_GAP * (COLUMNS - 1)) / COLUMNS : undefined;
+
   const renderItem = ({ item }: { item: GridItem }) => (
-    <PressableScale style={styles.item} activeScale={0.97} onPress={() => onPressItem(item.id)}>
+    <PressableScale
+      style={[styles.item, itemSize ? { width: itemSize, flex: undefined } : null]}
+      activeScale={0.97}
+      onPress={() => onPressItem(item.id)}
+    >
       {item.image ? (
         <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
       ) : (
@@ -54,7 +81,7 @@ export const ProfilePostsGrid: React.FC<ProfilePostsGridProps> = ({
   );
 
   return (
-    <View style={styles.panel}>
+    <View style={styles.panel} onLayout={handlePanelLayout}>
       <Text style={styles.title}>{title}</Text>
 
       {loading ? (

@@ -23,7 +23,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { savesService, SavedItem, SmartCollectionId } from '../services/savesService';
 import { SubHeader, PressableScale } from '../components/ui';
-import { colors, radius, spacing, fontFamily, shadows } from '../theme';
+import { colors, radius, spacing, fontFamily, fontSize, shadows } from '../theme';
 
 interface SavedScreenProps {
   onBack: () => void;
@@ -161,6 +161,9 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={COLLECTION_CARD_WIDTH + spacing.s10}
+              snapToAlignment="start"
               contentContainerStyle={styles.collectionsRow}
             >
               {collections.map((c) => (
@@ -195,6 +198,7 @@ export const SavedScreen: React.FC<SavedScreenProps> = ({ onBack }) => {
 };
 
 const GAP = spacing.sm;
+const COLLECTION_CARD_WIDTH = 140;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -210,21 +214,23 @@ const styles = StyleSheet.create({
   mosaicSide: { flex: 1, gap: GAP },
   mosaicThumb: { flex: 1, borderRadius: radius.card, backgroundColor: colors.line },
 
-  countText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink, marginTop: spacing.md },
-  sectionTitle: { fontFamily: fontFamily.bold, fontSize: 16, color: colors.ink, marginTop: spacing.xl, marginBottom: spacing.md },
+  countText: { fontFamily: fontFamily.bold, fontSize: fontSize.meta, color: colors.ink, marginTop: spacing.md },
+  sectionTitle: { fontFamily: fontFamily.bold, fontSize: fontSize.h2, color: colors.ink, marginTop: spacing.xl, marginBottom: spacing.md },
 
   collectionsRow: { gap: spacing.s10, paddingRight: spacing.lg },
   collectionCard: {
-    width: 140,
+    width: COLLECTION_CARD_WIDTH,
     borderRadius: radius.input,
     backgroundColor: colors.panel,
     padding: spacing.md,
     gap: spacing.xs,
+    borderWidth: 2,
+    borderColor: 'transparent',
     ...shadows.hairline,
   },
-  collectionCardActive: { borderWidth: 2, borderColor: colors.ink },
-  collectionLabel: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
-  collectionCount: { fontFamily: fontFamily.regular, fontSize: 11, color: colors.muted },
+  collectionCardActive: { borderColor: colors.ink },
+  collectionLabel: { fontFamily: fontFamily.bold, fontSize: fontSize.meta, color: colors.ink },
+  collectionCount: { fontFamily: fontFamily.regular, fontSize: fontSize.micro, color: colors.muted },
 
   grid: { marginTop: spacing.xl, gap: GAP },
   gridRow: { gap: GAP },

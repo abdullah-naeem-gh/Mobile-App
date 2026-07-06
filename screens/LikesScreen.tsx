@@ -20,7 +20,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { likesService, LikedItem } from '../services/likesService';
 import { SubHeader, Chip, PressableScale } from '../components/ui';
-import { colors, radius, spacing, fontFamily } from '../theme';
+import { colors, radius, spacing, fontFamily, typography } from '../theme';
 
 interface LikesScreenProps {
   onBack: () => void;
@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.xl },
-  emptyText: { fontFamily: fontFamily.bold, fontSize: 18, color: colors.ink },
-  emptySub: { fontFamily: fontFamily.regular, fontSize: 14, color: colors.muted, textAlign: 'center' },
+  emptyText: { ...typography.h2, textAlign: 'center' },
+  emptySub: { ...typography.metaMuted, textAlign: 'center' },
   emptyFiltered: { alignItems: 'center', paddingVertical: spacing.x40 },
 
   tabs: {

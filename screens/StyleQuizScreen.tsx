@@ -84,6 +84,9 @@ export const StyleQuizScreen: React.FC = () => {
                 key={label}
                 activeScale={0.96}
                 onPress={() => toggle(label)}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                accessibilityState={{ selected: isLoved }}
                 style={[
                   styles.tile,
                   { backgroundColor: TONES[i] },
@@ -125,12 +128,12 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   step: { fontFamily: fontFamily.bold, fontSize: 13, letterSpacing: 1, color: colors.muted },
   skip: { fontFamily: fontFamily.medium, fontSize: 14, color: colors.muted },
-  title: { fontFamily: fontFamily.bold, fontSize: 26, letterSpacing: -0.4, color: colors.ink, marginTop: spacing.sm },
+  title: { fontFamily: fontFamily.bold, fontSize: 26, letterSpacing: -0.4, color: colors.ink },
   subtitle: { fontFamily: fontFamily.regular, fontSize: 14, lineHeight: 20, color: colors.muted },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.s10,
+    rowGap: spacing.s10,
     padding: spacing.xl,
     justifyContent: 'space-between',
   },
@@ -149,14 +152,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: spacing.xxl,
+    height: spacing.xxl,
+    borderRadius: radius.round,
     backgroundColor: colors.cta,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, gap: spacing.md },
-  progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.line, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 2, backgroundColor: colors.cta },
+  progressTrack: { height: spacing.xs, borderRadius: radius.round, backgroundColor: colors.line, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: radius.round, backgroundColor: colors.cta },
 });

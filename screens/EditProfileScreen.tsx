@@ -4,14 +4,23 @@
 // profile_pics bucket.
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, Alert, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 import { SubHeader, Field, Button, PressableScale } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { pickSquareImage, uploadImage } from '../lib/storage';
-import { colors, spacing, fontFamily, radius } from '../theme';
+import { colors, spacing, fontFamily, fontSize } from '../theme';
 
 interface EditProfileParams {
   name: string;
@@ -70,37 +79,46 @@ export const EditProfileScreen: React.FC<any> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <SubHeader title="Edit Profile" onBack={() => navigation.goBack()} centered />
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <PressableScale style={styles.avatarWrap} activeScale={0.95} onPress={pickAvatar}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Icon name="camera-outline" size={26} color={colors.muted} />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <PressableScale style={styles.avatarWrap} activeScale={0.95} onPress={pickAvatar}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Icon name="camera-outline" size={26} color={colors.muted} />
+                </View>
+              )}
+              <View style={styles.editBadge}>
+                <Icon name="camera" size={14} color={colors.onCta} />
               </View>
-            )}
-            <View style={styles.editBadge}>
-              <Icon name="camera" size={14} color={colors.onCta} />
+            </PressableScale>
+            <Text style={styles.avatarHint}>Edit Profile Image</Text>
+
+            <View style={styles.form}>
+              <Field label="Name" value={name} onChangeText={setName} placeholder="Your name" />
+              <Field
+                label="Bio / Description"
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Tell people about yourself"
+                multiline
+              />
             </View>
-          </PressableScale>
-          <Text style={styles.avatarHint}>Edit Profile Image</Text>
 
-          <View style={styles.form}>
-            <Field label="Name" value={name} onChangeText={setName} placeholder="Your name" />
-            <Field
-              label="Bio / Description"
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Tell people about yourself"
-              multiline
-            />
-          </View>
-
-          <Button label="Save Changes" onPress={handleSave} loading={saving} style={styles.save} />
-        </ScrollView>
+            <Button label="Save Changes" onPress={handleSave} loading={saving} style={styles.save} />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
@@ -114,9 +132,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  flex: {
+    flex: 1,
+  },
   scroll: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
     alignItems: 'center',
   },
   avatarWrap: {
@@ -149,7 +171,7 @@ const styles = StyleSheet.create({
   },
   avatarHint: {
     fontFamily: fontFamily.bold,
-    fontSize: 13,
+    fontSize: fontSize.meta,
     color: colors.muted,
     marginTop: spacing.md,
   },

@@ -111,6 +111,7 @@ export const OutfitTagsOverlay: React.FC<OutfitTagsOverlayProps> = ({
                 style={styles.tag}
                 onPress={() => onTagPress && onTagPress(outfitArticle)}
                 disabled={!onTagPress}
+                hitSlop={{ top: 7, bottom: 7, left: 7, right: 7 }}
               >
                 <Ionicons name="checkmark" size={14} color={colors.ink} />
               </TouchableOpacity>
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.panel,
+    backgroundColor: colors.tag, // matches the "linked" marker color used in OutfitTagger
     borderWidth: 2,
     borderColor: colors.ink,
     ...shadows.soft,
@@ -199,12 +200,17 @@ const styles = StyleSheet.create({
   tagCardArrowRight: {
     right: 10,
   },
+  // Default triangle (border-top only) points down; when the card sits
+  // BELOW the marker, the tail must be at the card's top edge pointing up
+  // (toward the marker above), so it's flipped 180deg.
   tagCardArrowTop: {
-    bottom: -8,
-    transform: [{ rotate: '0deg' }],
-  },
-  tagCardArrowBottom: {
     top: -8,
     transform: [{ rotate: '180deg' }],
+  },
+  // Card sits ABOVE the marker: tail at the bottom edge, pointing down
+  // (toward the marker below) — the default triangle orientation.
+  tagCardArrowBottom: {
+    bottom: -8,
+    transform: [{ rotate: '0deg' }],
   },
 });

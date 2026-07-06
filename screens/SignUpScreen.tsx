@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from '@expo/vector-icons/Ionicons';
 import { AuthScaffold } from '../components/auth/AuthScaffold';
 import { Button, Field, RoleChip, ErrorBanner } from '../components/ui';
-import { colors, fontFamily, spacing } from '../theme';
+import { colors, fontFamily, spacing, typography } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
 type RootStackParamList = {
@@ -75,7 +75,12 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
       title="Create your account"
       subtitle="Join the fashion community and start discovering your perfect style."
       footer={
-        <Pressable style={styles.switch} onPress={() => navigation.navigate('Login')}>
+        <Pressable
+          style={styles.switch}
+          onPress={() => navigation.navigate('Login')}
+          hitSlop={spacing.sm}
+          accessibilityRole="link"
+        >
           <Text style={styles.switchText}>
             Already have an account? <Text style={styles.switchLink}>Sign in</Text>
           </Text>
@@ -151,18 +156,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   label: {
-    fontFamily: fontFamily.bold,
-    fontSize: 14,
-    color: colors.ink,
+    ...typography.label,
   },
   switch: {
     alignItems: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
+    paddingVertical: spacing.xs,
   },
   switchText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.ink,
+    ...typography.meta,
   },
   switchLink: {
     fontFamily: fontFamily.bold,

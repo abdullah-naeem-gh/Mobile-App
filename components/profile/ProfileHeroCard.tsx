@@ -60,17 +60,17 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.panel,
-    paddingTop: 56,
+    paddingTop: spacing.x64,
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xl,
-    marginTop: 42,
+    marginTop: 47,
     gap: spacing.xl,
     alignItems: 'center',
     ...shadows.float,
   },
   avatarWrap: {
     position: 'absolute',
-    top: -42,
+    top: -47,
     alignSelf: 'center',
   },
   avatar: {

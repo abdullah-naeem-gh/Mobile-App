@@ -18,12 +18,22 @@ import { ArticleCard } from '../components/ArticleCard';
 import { PressableScale, TagPill, Wordmark } from '../components/ui';
 import { Article } from '../types';
 import { articleService } from '../services/articleService';
-import { colors, radius, spacing, fontFamily, shadows } from '../theme';
+import { colors, radius, spacing, fontFamily, typography, shadows } from '../theme';
 
 interface FullScreenArticleParams {
   articles: Article[];
   initialIndex: number;
 }
+
+// Chrome button diameter + the vertical rhythm around it — derived from
+// tokens so `chromeHeight` below can't silently drift from the actual
+// rendered chrome height.
+const CHROME_BTN_SIZE = spacing.x40;
+const CHROME_VERTICAL_PADDING = spacing.sm + spacing.md;
+
+// Tap target below 44x44 fails accessibility guidelines; the sheet's
+// bookmark icon is only 20x20, so pad its hit area without changing size.
+const SAVE_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
 
 // Typed loosely to satisfy the navigator's ScreenComponentType; params are
 // narrowed to the real shape below.
@@ -33,7 +43,7 @@ export const FullScreenArticleScreen: React.FC<any> = ({ route, navigation }) =>
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [pageHeight, setPageHeight] = useState(0);
 
-  const chromeHeight = insets.top + 60;
+  const chromeHeight = insets.top + CHROME_VERTICAL_PADDING + CHROME_BTN_SIZE;
 
   const handleLikeChange = async (articleId: string, isLiked: boolean) => {
     setArticles((prev) =>
@@ -99,6 +109,7 @@ export const FullScreenArticleScreen: React.FC<any> = ({ route, navigation }) =>
             onPress={() => handleSaveChange(item.id, !item.is_saved)}
             activeScale={0.85}
             accessibilityLabel="Save"
+            hitSlop={SAVE_HIT_SLOP}
           >
             <Icon
               name={item.is_saved ? 'bookmark' : 'bookmark-outline'}
@@ -145,11 +156,16 @@ export const FullScreenArticleScreen: React.FC<any> = ({ route, navigation }) =>
 
       {/* Floating top chrome */}
       <View style={[styles.chrome, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
-        <PressableScale style={styles.chromeBtn} activeScale={0.9} onPress={() => navigation.goBack()}>
+        <PressableScale
+          style={styles.chromeBtn}
+          activeScale={0.9}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Back"
+        >
           <Icon name="chevron-back" size={22} color={colors.ink} />
         </PressableScale>
         <Wordmark size={30} />
-        <PressableScale style={styles.chromeBtn} activeScale={0.9}>
+        <PressableScale style={styles.chromeBtn} activeScale={0.9} accessibilityLabel="More options">
           <Icon name="ellipsis-horizontal" size={20} color={colors.ink} />
         </PressableScale>
       </View>
@@ -187,9 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sheetTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 14,
-    color: colors.ink,
+    ...typography.label,
   },
   description: {
     flex: 1,
@@ -216,9 +230,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   chromeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: CHROME_BTN_SIZE,
+    height: CHROME_BTN_SIZE,
+    borderRadius: CHROME_BTN_SIZE / 2,
     backgroundColor: colors.frost,
     alignItems: 'center',
     justifyContent: 'center',
