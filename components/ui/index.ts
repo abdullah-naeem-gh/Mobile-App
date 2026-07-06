@@ -13,6 +13,9 @@ export type { InputProps } from './Input';
 export { Field } from './Field';
 export type { FieldProps } from './Field';
 
+export { ErrorBanner } from './ErrorBanner';
+export type { ErrorBannerProps } from './ErrorBanner';
+
 export { Wordmark } from './Wordmark';
 export type { WordmarkProps } from './Wordmark';
 

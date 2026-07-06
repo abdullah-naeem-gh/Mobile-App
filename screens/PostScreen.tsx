@@ -31,7 +31,7 @@ import { outfitService } from '../services/outfitService';
 import { CategoryType, GenderType, Article } from '../types';
 import { OutfitTagger, OutfitTag } from '../components/OutfitTagger';
 import { ArticleSearchModal } from '../components/ArticleSearchModal';
-import { SubHeader, Field, Button, Chip, PressableScale } from '../components/ui';
+import { SubHeader, Field, Button, Chip, PressableScale, ErrorBanner } from '../components/ui';
 import { ArticleFields } from '../components/post/ArticleFields';
 import { OutfitFields } from '../components/post/OutfitFields';
 import { useResponsive } from '../hooks/useResponsive';
@@ -232,12 +232,7 @@ export const PostScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {error ? (
-              <View style={styles.errorBox}>
-                <Icon name="alert-circle-outline" size={18} color={colors.error} />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
+            <ErrorBanner message={error} />
 
             {/* Image */}
             {showTagger ? (
@@ -359,18 +354,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
   },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#FFF5F5',
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: '#FFD5D5',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  errorText: { flex: 1, fontFamily: fontFamily.medium, fontSize: 14, color: colors.error },
   imageCard: {
     height: 220,
     borderRadius: radius.panel,
@@ -386,7 +369,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: colors.frost,
     alignItems: 'center',
     justifyContent: 'center',
   },

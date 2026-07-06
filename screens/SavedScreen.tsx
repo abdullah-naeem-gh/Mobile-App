@@ -312,11 +312,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.pillOverlay,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
-  priceText: { fontFamily: fontFamily.bold, fontSize: 10, color: '#fff' },
+  priceText: { fontFamily: fontFamily.bold, fontSize: 10, color: colors.onDark },
   bottomSpace: { height: spacing.xxl },
 });

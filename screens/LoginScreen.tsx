@@ -2,11 +2,11 @@
 // this file owns the form state + the useAuth().signIn call.
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Text, StyleSheet, Pressable } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { AuthScaffold } from '../components/auth/AuthScaffold';
-import { Button, Field } from '../components/ui';
-import { colors, fontFamily, spacing, radius } from '../theme';
+import { Button, Field, ErrorBanner } from '../components/ui';
+import { colors, fontFamily, spacing } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LoginScreenProps {
@@ -68,12 +68,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         secureTextEntry
       />
 
-      {error ? (
-        <View style={styles.errorBox}>
-          <Icon name="alert-circle-outline" size={20} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
+      <ErrorBanner message={error} />
 
       <Button
         label="Sign In"
@@ -86,23 +81,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#FFF5F5',
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: '#FFD5D5',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  errorText: {
-    flex: 1,
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    color: colors.error,
-  },
   switch: {
     alignItems: 'center',
     marginTop: spacing.sm,

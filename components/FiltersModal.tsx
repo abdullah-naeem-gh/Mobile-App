@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: colors.line,
   },
   colorChipText: {
     fontFamily: fontFamily.regular,

@@ -7,8 +7,8 @@ import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from '@expo/vector-icons/Ionicons';
 import { AuthScaffold } from '../components/auth/AuthScaffold';
-import { Button, Field, RoleChip } from '../components/ui';
-import { colors, fontFamily, spacing, radius } from '../theme';
+import { Button, Field, RoleChip, ErrorBanner } from '../components/ui';
+import { colors, fontFamily, spacing } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
 type RootStackParamList = {
@@ -130,12 +130,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
         secureTextEntry
       />
 
-      {error ? (
-        <View style={styles.errorBox}>
-          <Icon name="alert-circle-outline" size={20} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
+      <ErrorBanner message={error} />
 
       <Button
         label="Create an Account"
@@ -159,23 +154,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: 14,
     color: colors.ink,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#FFF5F5',
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: '#FFD5D5',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  errorText: {
-    flex: 1,
-    fontFamily: fontFamily.medium,
-    fontSize: 14,
-    color: colors.error,
   },
   switch: {
     alignItems: 'center',

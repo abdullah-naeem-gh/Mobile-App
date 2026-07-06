@@ -17,9 +17,10 @@ import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
+import { colors, spacing, fontFamily } from '../theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -86,20 +87,20 @@ const MainTabs = () => {
     screenOptions={{
       headerShown: false,
       tabBarStyle: {
-        backgroundColor: '#ffffff',
-        borderTopColor: '#e0e0e0',
+        backgroundColor: colors.bg,
+        borderTopColor: colors.line,
         borderTopWidth: 1,
-        paddingTop: 8,
+        paddingTop: spacing.sm,
         // Keep the tab bar clear of the Android gesture/nav bar and the iOS home indicator
-        paddingBottom: Math.max(insets.bottom, 8),
-        height: 64 + Math.max(insets.bottom, 8),
+        paddingBottom: Math.max(insets.bottom, spacing.sm),
+        height: 64 + Math.max(insets.bottom, spacing.sm),
       },
-      tabBarActiveTintColor: '#000000',
-      tabBarInactiveTintColor: '#9e9e9e',
+      tabBarActiveTintColor: colors.ink,
+      tabBarInactiveTintColor: colors.muted,
       tabBarLabelStyle: {
         fontSize: 12,
-        fontWeight: '500',
-        marginTop: 4,
+        fontFamily: fontFamily.medium,
+        marginTop: spacing.xs,
       },
     }}
   >
@@ -153,8 +154,8 @@ const MainTabs = () => {
 };
 
 const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
-    <Text style={{ color: '#000000' }}>Loading...</Text>
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
+    <ActivityIndicator size="large" color={colors.ink} />
   </View>
 );
 
