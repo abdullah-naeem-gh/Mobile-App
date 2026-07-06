@@ -27,8 +27,8 @@ import { articleService } from '../services/articleService';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
 import { Article, Brand } from '../types';
-import { PressableScale } from '../components/ui';
-import { colors, radius, spacing, fontFamily, shadows } from '../theme';
+import { PressableScale, Button } from '../components/ui';
+import { colors, radius, spacing, fontFamily, fontSize, shadows } from '../theme';
 
 interface BrandProfileParams {
   brandId: string;
@@ -179,23 +179,21 @@ export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
           {brand.description ? <Text style={styles.bio}>{brand.description}</Text> : null}
 
           <View style={styles.actions}>
-            <PressableScale
-              style={[styles.followBtn, following && styles.followingBtn]}
-              activeScale={0.97}
+            <Button
+              variant="inline"
+              label={following ? 'Following' : 'Follow'}
               onPress={handleToggleFollow}
               disabled={followBusy}
-            >
-              <Text style={[styles.followText, following && styles.followingText]}>
-                {following ? 'Following' : 'Follow'}
-              </Text>
-            </PressableScale>
-            <PressableScale
-              style={styles.messageBtn}
-              activeScale={0.97}
+              style={[styles.actionBtn, styles.followBtn, following && styles.followingBtn]}
+              textStyle={[styles.actionText, following && styles.followingText]}
+            />
+            <Button
+              variant="inline"
+              label="Message"
               onPress={handleMessage}
-            >
-              <Text style={styles.messageText}>Message</Text>
-            </PressableScale>
+              style={[styles.actionBtn, styles.messageBtn]}
+              textStyle={[styles.actionText, styles.messageText]}
+            />
           </View>
         </View>
 
@@ -269,60 +267,50 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     ...shadows.float,
   },
-  identityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   logo: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginTop: -38,
+    width: spacing.x64,
+    height: spacing.x64,
+    borderRadius: radius.round,
+    marginTop: -spacing.xxxl,
     borderWidth: 3,
     borderColor: colors.surface,
     backgroundColor: colors.tag,
   },
   logoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  logoInitial: { fontFamily: fontFamily.bold, fontSize: 28, color: colors.ink },
+  logoInitial: { fontFamily: fontFamily.bold, fontSize: fontSize.title, color: colors.ink },
   identityInfo: { flex: 1, minWidth: 0 },
-  brandName: { fontFamily: fontFamily.bold, fontSize: 19, color: colors.ink, marginBottom: spacing.xs },
+  brandName: { fontFamily: fontFamily.bold, fontSize: fontSize.h1, color: colors.ink, marginBottom: spacing.xs },
   statsRow: { flexDirection: 'row', gap: spacing.lg },
-  stat: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.muted },
+  stat: { fontFamily: fontFamily.regular, fontSize: fontSize.micro, color: colors.muted },
   statNum: { fontFamily: fontFamily.bold, color: colors.ink },
-  bio: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 19, color: colors.muted },
+  bio: { fontFamily: fontFamily.regular, fontSize: fontSize.meta, lineHeight: 20, color: colors.muted },
   actions: { flexDirection: 'row', gap: spacing.sm },
-  followBtn: {
-    flex: 2,
+  actionBtn: {
     height: 42,
     borderRadius: radius.card,
     backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
+  actionText: { color: colors.onDark },
+  followBtn: { flex: 2 },
   followingBtn: { backgroundColor: colors.input },
-  followText: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.onDark },
   followingText: { color: colors.ink },
-  messageBtn: {
-    flex: 1,
-    height: 42,
-    borderRadius: radius.card,
-    backgroundColor: colors.input,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  messageText: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink },
+  messageBtn: { flex: 1, backgroundColor: colors.input },
+  messageText: { color: colors.ink },
   tabs: {
     flexDirection: 'row',
-    gap: spacing.xxl,
-    paddingHorizontal: spacing.xl,
     marginTop: spacing.xl,
+    marginHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  tab: { alignItems: 'center' },
-  tabText: { fontFamily: fontFamily.medium, fontSize: 14, color: colors.muted, paddingVertical: spacing.md },
+  tab: { flex: 1, alignItems: 'center' },
+  tabText: { fontFamily: fontFamily.medium, fontSize: fontSize.meta, color: colors.muted, paddingVertical: spacing.md },
   tabTextActive: { fontFamily: fontFamily.bold, color: colors.ink },
   tabUnderline: { height: 2, width: 40, backgroundColor: 'transparent' },
   tabUnderlineActive: { backgroundColor: colors.ink },
-  grid: { padding: spacing.md, gap: spacing.xs },
-  gridRow: { gap: spacing.xs },
+  grid: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.sm },
+  gridRow: { gap: spacing.sm },
   gridItem: {
     flex: 1 / 3,
     aspectRatio: 3 / 4,
@@ -333,7 +321,7 @@ const styles = StyleSheet.create({
   gridImage: { width: '100%', height: '100%' },
   gridPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyGrid: { alignItems: 'center', paddingVertical: spacing.x40 },
-  emptyText: { fontFamily: fontFamily.regular, fontSize: 14, color: colors.muted },
+  emptyText: { fontFamily: fontFamily.regular, fontSize: fontSize.meta, color: colors.muted },
   bottomSpace: { height: spacing.xxl },
   chrome: {
     position: 'absolute',
@@ -356,9 +344,9 @@ const styles = StyleSheet.create({
   backChip: {
     marginTop: spacing.sm,
     backgroundColor: colors.ink,
-    borderRadius: 999,
+    borderRadius: radius.round,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.s10,
   },
-  backChipText: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.onDark },
+  backChipText: { fontFamily: fontFamily.bold, fontSize: fontSize.meta, color: colors.onDark },
 });

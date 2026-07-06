@@ -16,6 +16,7 @@ import {
   Alert,
   Linking,
   Pressable,
+  Share,
   StyleProp,
   ViewStyle,
 } from 'react-native';
@@ -73,6 +74,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
+  const handleShare = () => {
+    const parts = [article.title, article.purchase_url].filter(Boolean);
+    Share.share({ message: parts.join('\n') }).catch(() => {});
+  };
+
   return (
     <Pressable
       style={[styles.card, style]}
@@ -118,6 +124,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <PressableScale
           style={styles.railBtn}
           activeScale={0.85}
+          hitSlop={8}
           onPress={() => onLikeChange(article.id, !article.is_liked)}
           accessibilityLabel="Like"
         >
@@ -132,6 +139,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <PressableScale
           style={styles.railBtn}
           activeScale={0.85}
+          hitSlop={8}
           onPress={() => onSaveChange(article.id, !article.is_saved)}
           accessibilityLabel="Save"
         >
@@ -142,7 +150,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           />
         </PressableScale>
 
-        <PressableScale style={styles.railBtn} activeScale={0.85} accessibilityLabel="Share">
+        <PressableScale style={styles.railBtn} activeScale={0.85} hitSlop={8} onPress={handleShare} accessibilityLabel="Share">
           <Icon name="share-social-outline" size={26} color={RAIL_ICON} />
         </PressableScale>
       </View>
@@ -216,7 +224,7 @@ const styles = StyleSheet.create({
   rail: {
     position: 'absolute',
     right: spacing.md,
-    bottom: 150,
+    bottom: spacing.xl + spacing.x64 * 2,
     alignItems: 'center',
     gap: spacing.xl,
     zIndex: 3,

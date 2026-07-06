@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: spacing.xl,
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingBottom: spacing.md,
   },
   articleItem: {
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   articleInfo: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xs,
   },
   articleTitle: {
     fontFamily: fontFamily.medium,

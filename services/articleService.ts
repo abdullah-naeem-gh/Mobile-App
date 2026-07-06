@@ -249,6 +249,48 @@ export const articleService = {
   },
 
   /**
+   * Fetch one article by id, with brand and like/save state joined in —
+   * same shape as getArticles rows.
+   */
+  async getArticleById(
+    articleId: string,
+    currentUserId?: string
+  ): Promise<{ success: boolean; data?: Article; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select(`
+          *,
+          brand:brands(*),
+          likes:likes(user_id),
+          saves:saves(user_id),
+          likes_count:likes!likes_article_id_fkey(count),
+          saves_count:saves!saves_article_id_fkey(count)
+        `)
+        .eq('id', articleId)
+        .single();
+
+      if (error) throw error;
+
+      const article = {
+        ...data,
+        likes_count: data.likes_count?.[0]?.count || 0,
+        saves_count: data.saves_count?.[0]?.count || 0,
+        is_liked: currentUserId ? data.likes?.some((l: any) => l.user_id === currentUserId) : false,
+        is_saved: currentUserId ? data.saves?.some((s: any) => s.user_id === currentUserId) : false,
+      };
+
+      return { success: true, data: article as Article };
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch article'
+      };
+    }
+  },
+
+  /**
    * Create a new article
    */
   async createArticle(articleData: Omit<Article, 'id' | 'created_at' | 'likes_count' | 'saves_count'>): Promise<{ success: boolean; data?: Article; error?: string }> {

@@ -4,16 +4,20 @@
 // and safe-area aware; no hardcoded 390-based offsets.
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
-import { Button } from '../components/ui';
-import { colors, spacing, radius, fontFamily, shadows } from '../theme';
+import { Button, Wordmark } from '../components/ui';
+import { colors, spacing, radius, fontFamily, fontSize, shadows } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 
 interface WelcomeScreenProps {
   navigation: { navigate: (screen: 'Login' | 'SignUp') => void };
 }
+
+// Rendered height of the brand mark; also used to derive its floating-card
+// clearance so it stays in sync if the size ever changes.
+const LOGO_HEIGHT = 72;
 
 // A single decorative placeholder card that drifts gently up and down.
 const FloatingCard: React.FC<{
@@ -88,7 +92,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
         {/* Brand mark */}
         <View style={styles.logoWrap}>
-          <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+          <Wordmark size={LOGO_HEIGHT} />
         </View>
 
         {/* Headline + CTAs, anchored bottom */}
@@ -99,16 +103,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
           <Text style={styles.subtitle}>
             Connect with brands, explore outfits, and find articles that match your style
           </Text>
-          <Button
-            label="Get Started"
-            onPress={() => navigation.navigate('SignUp')}
-            trailing={<Icon name="arrow-forward" size={20} color={colors.onCta} />}
-          />
-          <Button
-            label="I already have an account"
-            variant="secondary"
-            onPress={() => navigation.navigate('Login')}
-          />
+          <View style={styles.ctaGroup}>
+            <Button
+              label="Get Started"
+              onPress={() => navigation.navigate('SignUp')}
+              trailing={<Icon name="arrow-forward" size={20} color={colors.onCta} />}
+            />
+            <Button
+              label="I already have an account"
+              variant="secondary"
+              onPress={() => navigation.navigate('Login')}
+            />
+          </View>
         </Animated.View>
       </SafeAreaView>
     </View>
@@ -134,19 +140,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xxl,
   },
-  logo: {
-    width: 220,
-    height: 72,
-  },
   content: {
     marginTop: 'auto',
     paddingHorizontal: spacing.xxl,
     paddingBottom: spacing.xxl,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   title: {
     fontFamily: fontFamily.bold,
-    fontSize: 36,
+    fontSize: fontSize.display,
     lineHeight: 40,
     letterSpacing: -0.5,
     color: colors.ink,
@@ -154,11 +156,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: fontFamily.regular,
-    fontSize: 16,
+    fontSize: fontSize.body,
     lineHeight: 22,
     color: colors.faded,
     textAlign: 'center',
     marginHorizontal: spacing.md,
-    marginBottom: spacing.xs,
+  },
+  ctaGroup: {
+    marginTop: spacing.md,
+    gap: spacing.md,
   },
 });

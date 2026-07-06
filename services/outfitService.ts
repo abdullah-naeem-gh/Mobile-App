@@ -283,6 +283,7 @@ class OutfitService {
           is_liked: filters.currentUserId ? outfit.likes.some((like: any) => like.user_id === filters.currentUserId) : false,
           is_saved: filters.currentUserId ? outfit.saves.some((save: any) => save.user_id === filters.currentUserId) : false,
           created_at: outfit.created_at,
+          style_tags: outfit.style_tags,
           outfit_articles: cleanedOutfitArticles,
         };
       }) || [];
@@ -290,6 +291,70 @@ class OutfitService {
       return { success: true, data: transformedData };
     } catch (error) {
       console.error('Get outfits error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Fetch one outfit by id in the same OutfitCardData shape as getOutfits.
+   */
+  async getOutfitById(
+    outfitId: string,
+    currentUserId?: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const { data: outfit, error } = await supabase
+        .from('outfits')
+        .select(`
+          *,
+          users:user_id(id, username, profile_pic_url),
+          brands:brand_id(id, name, logo_url),
+          outfit_articles(
+            x_position,
+            y_position,
+            articles(id, title, price, currency, image_urls, purchase_url)
+          ),
+          likes:likes!likes_outfit_id_fkey(user_id),
+          saves:saves!saves_outfit_id_fkey(user_id),
+          likes_count:likes!likes_outfit_id_fkey(count),
+          saves_count:saves!saves_outfit_id_fkey(count)
+        `)
+        .eq('id', outfitId)
+        .single();
+
+      if (error) {
+        console.error('Get outfit by id error:', error);
+        return { success: false, error: error.message };
+      }
+
+      const transformed = {
+        id: outfit.id,
+        image_urls: [outfit.image_url],
+        description: outfit.description,
+        user: outfit.users ? {
+          id: outfit.users.id,
+          username: outfit.users.username,
+          profile_image_url: outfit.users.profile_pic_url,
+        } : outfit.brands ? {
+          id: outfit.brands.id,
+          username: outfit.brands.name,
+          profile_image_url: outfit.brands.logo_url,
+        } : null,
+        likes_count: outfit.likes_count?.[0]?.count || 0,
+        saves_count: outfit.saves_count?.[0]?.count || 0,
+        is_liked: currentUserId ? outfit.likes.some((like: any) => like.user_id === currentUserId) : false,
+        is_saved: currentUserId ? outfit.saves.some((save: any) => save.user_id === currentUserId) : false,
+        created_at: outfit.created_at,
+        style_tags: outfit.style_tags,
+        outfit_articles: outfit.outfit_articles || [],
+      };
+
+      return { success: true, data: transformed };
+    } catch (error) {
+      console.error('Get outfit by id error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

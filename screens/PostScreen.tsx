@@ -31,7 +31,7 @@ import { outfitService } from '../services/outfitService';
 import { CategoryType, GenderType, Article } from '../types';
 import { OutfitTagger, OutfitTag } from '../components/OutfitTagger';
 import { ArticleSearchModal } from '../components/ArticleSearchModal';
-import { SubHeader, Field, Button, Chip, PressableScale, ErrorBanner } from '../components/ui';
+import { SubHeader, Field, Button, RoleChip, PressableScale, ErrorBanner } from '../components/ui';
 import { ArticleFields } from '../components/post/ArticleFields';
 import { OutfitFields } from '../components/post/OutfitFields';
 import { useResponsive } from '../hooks/useResponsive';
@@ -219,8 +219,16 @@ export const PostScreen: React.FC = () => {
 
         {/* Post type toggle */}
         <View style={styles.toggle}>
-          <Chip label="Article" active={postType === 'article'} onPress={() => setPostType('article')} />
-          <Chip label="Outfit" active={postType === 'outfit'} onPress={() => setPostType('outfit')} />
+          <RoleChip
+            label="Article"
+            selected={postType === 'article'}
+            onPress={() => setPostType('article')}
+          />
+          <RoleChip
+            label="Outfit"
+            selected={postType === 'outfit'}
+            onPress={() => setPostType('outfit')}
+          />
         </View>
 
         <KeyboardAvoidingView
@@ -345,9 +353,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   toggle: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
   },
   scroll: {
     paddingHorizontal: spacing.xl,

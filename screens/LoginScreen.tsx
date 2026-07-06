@@ -6,7 +6,7 @@ import { Text, StyleSheet, Pressable } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { AuthScaffold } from '../components/auth/AuthScaffold';
 import { Button, Field, ErrorBanner } from '../components/ui';
-import { colors, fontFamily, spacing } from '../theme';
+import { colors, fontFamily, fontSize, spacing } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LoginScreenProps {
@@ -21,13 +21,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (loading) return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setError('Please fill in all fields');
       return;
     }
     setLoading(true);
     setError(null);
-    const { error: signInError } = await signIn(email, password);
+    const { error: signInError } = await signIn(trimmedEmail, password);
     setLoading(false);
     if (signInError) {
       setError(signInError.message || 'Login failed. Please try again.');
@@ -39,7 +41,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       title="Sign in to continue"
       subtitle="Discover your perfect style and explore fashion brands."
       footer={
-        <Pressable style={styles.switch} onPress={() => navigation.navigate('SignUp')}>
+        <Pressable
+          style={styles.switch}
+          hitSlop={spacing.md}
+          onPress={() => navigation.navigate('SignUp')}
+        >
           <Text style={styles.switchText}>
             Don't have an account? <Text style={styles.switchLink}>Sign Up</Text>
           </Text>
@@ -56,6 +62,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }}
         keyboardType="email-address"
         autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        textContentType="emailAddress"
       />
       <Field
         label="Password"
@@ -66,6 +75,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           if (error) setError(null);
         }}
         secureTextEntry
+        autoComplete="current-password"
+        textContentType="password"
+        returnKeyType="done"
+        onSubmitEditing={handleLogin}
       />
 
       <ErrorBanner message={error} />
@@ -87,7 +100,7 @@ const styles = StyleSheet.create({
   },
   switchText: {
     fontFamily: fontFamily.regular,
-    fontSize: 14,
+    fontSize: fontSize.meta,
     color: colors.ink,
   },
   switchLink: {

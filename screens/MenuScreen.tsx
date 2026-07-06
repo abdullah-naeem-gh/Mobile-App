@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { PressableScale } from '../components/ui';
-import { colors, radius, spacing, fontFamily, shadows } from '../theme';
+import { colors, radius, spacing, fontFamily, fontSize, shadows } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 
 interface MenuScreenProps {
@@ -72,10 +72,13 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ visible, onClose, onNavi
           </View>
 
           <View style={styles.menuItems}>
-            {MENU_ITEMS.map((item) => (
+            {MENU_ITEMS.map((item, index) => (
               <PressableScale
                 key={item.screen}
-                style={styles.menuItem}
+                style={[
+                  styles.menuItem,
+                  index === MENU_ITEMS.length - 1 && styles.menuItemLast,
+                ]}
                 activeScale={0.98}
                 onPress={() => handleMenuItemPress(item.screen)}
                 accessibilityRole="button"
@@ -165,6 +168,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
+  menuItemLast: {
+    borderBottomWidth: 0,
+  },
   menuItemIcon: {
     marginRight: spacing.lg,
     width: 24,
@@ -173,7 +179,7 @@ const styles = StyleSheet.create({
   menuItemText: {
     flex: 1,
     fontFamily: fontFamily.medium,
-    fontSize: 16,
+    fontSize: fontSize.body,
     color: colors.ink,
   },
   footer: {
@@ -184,7 +190,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     backgroundColor: colors.ink,
-    height: 52,
+    height: 60,
     borderRadius: radius.input,
     alignItems: 'center',
     justifyContent: 'center',
@@ -192,6 +198,6 @@ const styles = StyleSheet.create({
   signOutText: {
     color: colors.onDark,
     fontFamily: fontFamily.bold,
-    fontSize: 16,
+    fontSize: fontSize.body,
   },
 });

@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { CategoryType, GenderType } from '../types';
 import { ArticleFilters, articleService } from '../services/articleService';
-import { Input, Section } from './ui';
+import { Chip, Input, Section } from './ui';
 import { colors, radius, spacing, fontFamily, shadows } from '../theme';
 
 interface FiltersModalProps {
@@ -52,19 +52,6 @@ const SWATCH: Record<string, string> = {
 };
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-const FilterChip: React.FC<{ label: string; active: boolean; onPress: () => void }> = ({
-  label,
-  active,
-  onPress,
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
-  >
-    <Text style={[styles.chipText, { color: active ? colors.onDark : colors.ink }]}>{label}</Text>
-  </Pressable>
-);
 
 export const FiltersModal: React.FC<FiltersModalProps> = ({
   visible,
@@ -157,7 +144,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               <Section title="Gender">
                 <View style={styles.chipRow}>
                   {GENDER_OPTIONS.map((g) => (
-                    <FilterChip
+                    <Chip
                       key={g}
                       label={cap(g)}
                       active={selectedGender === g}
@@ -170,7 +157,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               <Section title="Category">
                 <View style={styles.chipRow}>
                   {CATEGORY_OPTIONS.map((c) => (
-                    <FilterChip
+                    <Chip
                       key={c}
                       label={cap(c)}
                       active={selectedCategory === c}
@@ -201,7 +188,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               <Section title="Sizes">
                 <View style={styles.chipRow}>
                   {SIZE_OPTIONS.map((s) => (
-                    <FilterChip
+                    <Chip
                       key={s}
                       label={s}
                       active={selectedSizes.includes(s)}
@@ -299,25 +286,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  chip: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  chipIdle: { backgroundColor: colors.input },
-  chipActive: { backgroundColor: colors.ink },
-  chipText: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-  },
   colorChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radius.pill,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    paddingLeft: 6,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.s10,
+    paddingLeft: spacing.xs,
     backgroundColor: colors.input,
     borderWidth: 2,
     borderColor: 'transparent',
