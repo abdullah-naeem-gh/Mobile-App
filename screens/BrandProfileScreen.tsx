@@ -2,8 +2,11 @@
 // name. Cover + identity card (follow/message), then Articles / Lookbook
 // tabs. Wired to the brands table + articleService.getArticles({ brandId }).
 //
-// TODO(backend): real follow/message; Lookbook currently shows the brand's
-// outfits.
+// Follow/unfollow is persisted via followService against the existing
+// `follows` table. There is no in-app messaging system in this codebase yet
+// (no conversations/chat table, no realtime wiring) — building one is a
+// separate feature, not a redesign backfill. "Message" is an honest stub:
+// it deep-links to email so a consumer can actually reach the brand today.
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -15,11 +18,14 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 import { supabase } from '../lib/supabase';
 import { articleService } from '../services/articleService';
+import { followService } from '../services/followService';
+import { useAuth } from '../contexts/AuthContext';
 import { Article, Brand } from '../types';
 import { PressableScale } from '../components/ui';
 import { colors, radius, spacing, fontFamily, shadows } from '../theme';
@@ -37,6 +43,7 @@ interface OutfitRow {
 
 export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { brandId } = route.params as BrandProfileParams;
   const [brand, setBrand] = useState<Brand | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -44,23 +51,66 @@ export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('articles');
   const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: brandData }, articlesResult, { data: outfitData }] = await Promise.all([
+    const [{ data: brandData }, articlesResult, { data: outfitData }, followerCountResult] = await Promise.all([
       supabase.from('brands').select('*').eq('id', brandId).single(),
       articleService.getArticles({ brandId }),
       supabase.from('outfits').select('id, image_url').eq('brand_id', brandId).eq('is_public', true),
+      followService.getBrandFollowerCount(brandId),
     ]);
     if (brandData) setBrand(brandData as Brand);
     if (articlesResult.success && articlesResult.data) setArticles(articlesResult.data);
     setOutfits((outfitData as OutfitRow[]) || []);
+    if (followerCountResult.success && followerCountResult.data !== undefined) {
+      setFollowerCount(followerCountResult.data);
+    }
+    if (user) {
+      const followingResult = await followService.isFollowingBrand(user.id, brandId);
+      if (followingResult.success) setFollowing(!!followingResult.data);
+    }
     setLoading(false);
-  }, [brandId]);
+  }, [brandId, user]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleToggleFollow = async () => {
+    if (!user) {
+      Alert.alert('Sign in required', 'Sign in to follow brands.');
+      return;
+    }
+    if (followBusy) return;
+    setFollowBusy(true);
+    const previousFollowing = following;
+    // Optimistic update, then reconcile with the server response.
+    setFollowing(!previousFollowing);
+    setFollowerCount((c) => (previousFollowing ? Math.max(0, c - 1) : c + 1));
+
+    const result = await followService.toggleFollowBrand(user.id, brandId);
+    if (!result.success) {
+      setFollowing(previousFollowing);
+      setFollowerCount((c) => (previousFollowing ? c + 1 : Math.max(0, c - 1)));
+      Alert.alert('Error', result.error || 'Failed to update follow status');
+    } else if (result.data) {
+      setFollowing(result.data.following);
+    }
+    setFollowBusy(false);
+  };
+
+  const handleMessage = () => {
+    // No in-app messaging system exists in this codebase yet. Deep-link to
+    // email as an honest, minimal contact path rather than faking a chat UI.
+    const subject = encodeURIComponent(`Message to ${brand?.name ?? 'brand'} via Kaprayy`);
+    const url = `mailto:support@kaprayy.com?subject=${subject}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert('Unable to open mail app', 'Please email support@kaprayy.com directly.'),
+    );
+  };
 
   const cover = articles[0]?.image_urls?.[0] ?? brand?.logo_url;
   const gridData: { id: string; image: string | null }[] =
@@ -120,7 +170,7 @@ export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
                   <Text style={styles.statNum}>{brand.articles_count ?? articles.length}</Text> articles
                 </Text>
                 <Text style={styles.stat}>
-                  <Text style={styles.statNum}>{brand.followers_count ?? 0}</Text> followers
+                  <Text style={styles.statNum}>{followerCount}</Text> followers
                 </Text>
               </View>
             </View>
@@ -132,7 +182,8 @@ export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
             <PressableScale
               style={[styles.followBtn, following && styles.followingBtn]}
               activeScale={0.97}
-              onPress={() => setFollowing((f) => !f)}
+              onPress={handleToggleFollow}
+              disabled={followBusy}
             >
               <Text style={[styles.followText, following && styles.followingText]}>
                 {following ? 'Following' : 'Follow'}
@@ -141,7 +192,7 @@ export const BrandProfileScreen: React.FC<any> = ({ route, navigation }) => {
             <PressableScale
               style={styles.messageBtn}
               activeScale={0.97}
-              onPress={() => Alert.alert('Message', 'Messaging will be implemented')}
+              onPress={handleMessage}
             >
               <Text style={styles.messageText}>Message</Text>
             </PressableScale>
