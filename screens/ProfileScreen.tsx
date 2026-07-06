@@ -18,9 +18,13 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { articleService } from '../services/articleService';
+import { outfitService } from '../services/outfitService';
 import { MenuScreen } from './MenuScreen';
 import { SavedScreen } from './SavedScreen';
 import { LikesScreen } from './LikesScreen';
+import { FollowListScreen } from './FollowListScreen';
+import { AccountSettingsScreen } from './AccountSettingsScreen';
 import { SubHeader, PressableScale, Chip } from '../components/ui';
 import { ProfileHeroCard } from '../components/profile/ProfileHeroCard';
 import { ProfilePostsGrid, GridItem } from '../components/profile/ProfilePostsGrid';
@@ -76,6 +80,8 @@ export const ProfileScreen: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSavedScreen, setShowSavedScreen] = useState(false);
   const [showLikesScreen, setShowLikesScreen] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [followListMode, setFollowListMode] = useState<'followers' | 'following' | null>(null);
 
   const isBrand = userRole === 'brand';
 
@@ -200,7 +206,9 @@ export const ProfileScreen: React.FC = () => {
   const handleMenuNavigate = (screen: string) => {
     if (screen === 'Saved') setShowSavedScreen(true);
     else if (screen === 'Likes') setShowLikesScreen(true);
-    else Alert.alert(screen, `${screen} functionality will be implemented`);
+    else if (screen === 'AccountSettings') setShowAccountSettings(true);
+    else if (screen === 'Followers') setFollowListMode('followers');
+    else if (screen === 'Following') setFollowListMode('following');
   };
 
   const contentData: ContentRow[] = isBrand
@@ -219,6 +227,38 @@ export const ProfileScreen: React.FC = () => {
 
   if (showSavedScreen) return <SavedScreen onBack={() => setShowSavedScreen(false)} />;
   if (showLikesScreen) return <LikesScreen onBack={() => setShowLikesScreen(false)} />;
+  if (showAccountSettings)
+    return (
+      <AccountSettingsScreen
+        onBack={() => setShowAccountSettings(false)}
+        onEditProfile={() => {
+          setShowAccountSettings(false);
+          if (!profile) return;
+          navigation.navigate('EditProfile', {
+            name: isBrand ? (profile as BrandProfile).name : (profile as UserProfile).username,
+            bio:
+              (isBrand ? (profile as BrandProfile).description : (profile as UserProfile).bio) ??
+              '',
+            avatarUrl:
+              (isBrand
+                ? (profile as BrandProfile).logo_url
+                : (profile as UserProfile).profile_image_url) ?? null,
+            isBrand,
+          });
+        }}
+      />
+    );
+  if (followListMode)
+    return (
+      <FollowListScreen
+        mode={followListMode}
+        onBack={() => setFollowListMode(null)}
+        onOpenBrand={(brandId) => {
+          setFollowListMode(null);
+          navigation.navigate('BrandProfile', { brandId });
+        }}
+      />
+    );
 
   if (loading) {
     return (
@@ -322,12 +362,25 @@ export const ProfileScreen: React.FC = () => {
             error={contentError}
             emptyLabel={`No ${isArticleView ? 'articles' : 'outfits'} yet`}
             onRetry={loadContent}
-            onPressItem={(id) => {
-              const item = contentData.find((c) => c.id === id);
-              Alert.alert(
-                isArticleView ? 'Article' : 'Outfit',
-                item?.title || 'Untitled',
-              );
+            onPressItem={async (id) => {
+              if (isArticleView) {
+                const result = await articleService.getArticleById(id, user?.id);
+                if (result.success && result.data) {
+                  navigation.navigate('FullScreenArticle', {
+                    articles: [result.data],
+                    initialIndex: 0,
+                  });
+                } else {
+                  Alert.alert('Error', result.error || 'Failed to open article');
+                }
+              } else {
+                const result = await outfitService.getOutfitById(id, user?.id);
+                if (result.success && result.data) {
+                  navigation.navigate('OutfitDetail', { outfit: result.data });
+                } else {
+                  Alert.alert('Error', result.error || 'Failed to open outfit');
+                }
+              }
             }}
           />
 

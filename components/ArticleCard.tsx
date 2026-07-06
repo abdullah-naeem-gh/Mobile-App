@@ -16,6 +16,7 @@ import {
   Alert,
   Linking,
   Pressable,
+  Share,
   StyleProp,
   ViewStyle,
 } from 'react-native';
@@ -71,6 +72,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         { text: 'OK' },
       ]);
     }
+  };
+
+  const handleShare = () => {
+    const parts = [article.title, article.purchase_url].filter(Boolean);
+    Share.share({ message: parts.join('\n') }).catch(() => {});
   };
 
   return (
@@ -144,7 +150,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           />
         </PressableScale>
 
-        <PressableScale style={styles.railBtn} activeScale={0.85} hitSlop={8} accessibilityLabel="Share">
+        <PressableScale style={styles.railBtn} activeScale={0.85} hitSlop={8} onPress={handleShare} accessibilityLabel="Share">
           <Icon name="share-social-outline" size={26} color={RAIL_ICON} />
         </PressableScale>
       </View>

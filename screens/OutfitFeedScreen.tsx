@@ -14,6 +14,7 @@ import {
   LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { AppHeader, BeigePanel } from '../components/ui';
 import { OutfitCard } from '../components/OutfitCard';
 import { outfitService } from '../services/outfitService';
@@ -30,6 +31,7 @@ const CARD_BOTTOM_GAP = spacing.x64;
 export const OutfitFeedScreen: React.FC = () => {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const [outfits, setOutfits] = useState<OutfitCardData[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +82,7 @@ export const OutfitFeedScreen: React.FC = () => {
   }, [hasMore, loading, page, loadOutfits]);
 
   const handleOutfitPress = (outfit: OutfitCardData) => {
-    Alert.alert('Outfit Details', `Viewing outfit by ${outfit.user.username}`);
+    navigation.navigate('OutfitDetail', { outfit });
   };
 
   const handleLikeChange = async (outfitId: string, isLiked: boolean) => {

@@ -14,6 +14,7 @@ import {
   Alert,
   Linking,
   Pressable,
+  Share,
   StyleProp,
   ViewStyle,
 } from 'react-native';
@@ -68,6 +69,12 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
         { text: 'OK' },
       ]);
     }
+  };
+
+  const handleShare = () => {
+    const by = outfit.user?.username ? ` by ${outfit.user.username}` : '';
+    const parts = [`Check out this outfit${by} on Kaprayy`, outfit.description].filter(Boolean);
+    Share.share({ message: parts.join('\n') }).catch(() => {});
   };
 
   return (
@@ -145,7 +152,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
           <Text style={styles.railCount}>{outfit.saves_count ?? 0}</Text>
         </PressableScale>
 
-        <PressableScale style={styles.railBtn} activeScale={0.85} accessibilityLabel="Share">
+        <PressableScale style={styles.railBtn} activeScale={0.85} onPress={handleShare} accessibilityLabel="Share">
           <Icon name="share-social-outline" size={26} color={RAIL_ICON} />
         </PressableScale>
       </View>

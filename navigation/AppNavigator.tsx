@@ -17,6 +17,7 @@ import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { SavedScreen } from '../screens/SavedScreen';
 import { useNavigation } from '@react-navigation/native';
 import { FullScreenArticleScreen } from '../screens/FullScreenArticleScreen';
+import { OutfitDetailScreen } from '../screens/OutfitDetailScreen';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
@@ -52,6 +53,7 @@ const HomeStack = () => (
 const OutfitStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="OutfitFeedScreen" component={OutfitFeedScreen} />
+    <Stack.Screen name="OutfitDetail" component={OutfitDetailScreen} />
   </Stack.Navigator>
 );
 
@@ -76,6 +78,9 @@ const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+    <Stack.Screen name="OutfitDetail" component={OutfitDetailScreen} />
+    <Stack.Screen name="FullScreenArticle" component={FullScreenArticleScreen} />
+    <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
   </Stack.Navigator>
 );
 
